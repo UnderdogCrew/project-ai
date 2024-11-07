@@ -26,6 +26,6 @@ class Settings(BaseSettings):
 
     class Config:
         case_sensitive = True
-        env_file = "/Users/neelpatel/Desktop/UnderdogCrew/project-ai/.env"
+        env_file = "/opt/python_api/project-ai/.env"
 
 settings = Settings() 
