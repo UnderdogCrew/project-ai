@@ -2,7 +2,7 @@ module.exports = {
     apps: [
         {
             name: 'agent-api',
-            script: 'uvicorn main:app --host 0.0.0.0',
+            script: 'fastapi dev main.py --host 0.0.0.0',
             args: '',
             instances: 1,
             autorestart: true,
