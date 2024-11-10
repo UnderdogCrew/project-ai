@@ -310,8 +310,6 @@ async def update_data_management(
     # Update document
     update_data = {
         **data.model_dump(exclude_none=True),
-        "source_type": source_type,
-        "status": DataStatus.SUCCESS,
         "updated_at": datetime.now()
     }
 
