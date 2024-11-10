@@ -11,6 +11,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from app.core.config import settings
 from pydantic import Field, validator
+from langchain.schema import Document
 
 
 qdrant_api_url = settings.QDRANT_API_URL
@@ -87,7 +88,7 @@ def file_data(url, rag_manage_id):
     response = requests.get(url)
 
     # Local path where you want to save the file (including the file name)
-    local_filename = join(dirname(__file__)) + "/" + str(rag_manage_id)
+    local_filename = join(dirname(__file__)) + "/" + str(rag_manage_id)+".pdf"
 
     # Open the local file in write-binary mode and save the content
     with open(local_filename, 'wb') as file:
@@ -103,11 +104,15 @@ def file_data(url, rag_manage_id):
                 page_content = page_content + "\n" + _i.text
     except:
         page_content = pymupdf4llm.to_markdown(local_filename)
+    print(file_content)
     text_splitter = CharacterTextSplitter(separator="\n\n", chunk_size=5000, chunk_overlap=0, length_function=len)
-    text_chunks = text_splitter.split_documents(file_content)
+    docs = [Document(page_content=file_content)]
+    text_chunks = text_splitter.split_documents(docs)
+    
 
     QdrantVectorStore.from_documents(
         text_chunks,
+        embedding=OpenAIEmbeddings(model="text-embedding-ada-002"),
         url=qdrant_api_url,
         api_key=qdrant_api_key,
         prefer_grpc=True,
