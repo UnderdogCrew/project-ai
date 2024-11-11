@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     LLAMA_CLOUD_API_KEY: str = os.environ.get("LLAMA_CLOUD_API_KEY")
     OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY")
     MONGODB_COLLECTION_DATA_MANAGEMENT: str = os.environ.get("MONGODB_COLLECTION_DATA_MANAGEMENT")
+    MONGODB_COLLECTION_AGENT_STUDIO: str = os.environ.get("MONGODB_COLLECTION_AGENT_STUDIO")
 
     # WhatsApp Settings
     WHATSAPP_ACCESS_TOKEN: str = os.environ.get("WHATSAPP_ACCESS_TOKEN")
