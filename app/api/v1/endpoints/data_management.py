@@ -15,8 +15,8 @@ from app.schemas.data_management import (
     DataStatus
 )
 import uuid
-from app.mamage_data.read_file_content import file_data
-from app.mamage_data.website_scrapper import scrap_website
+from app.manage_data.read_file_content import file_data
+from app.manage_data.website_scrapper import scrap_website
 from qdrant_client.http.models import PointStruct, VectorParams
 from qdrant_client import QdrantClient
 from uuid import uuid4
