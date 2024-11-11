@@ -52,7 +52,7 @@ async def send_whatsapp_message(message_data: WhatsAppMessage):
                 "template": {
                     "name": "hello_world",
                     "language": {
-                        "code": "en"
+                        "code": "en_US"
                     }
                 }
             }
