@@ -58,6 +58,7 @@ async def send_whatsapp_message(message_data: WhatsAppMessage):
             }
         print(payload)
         print(url)
+        print("headers", headers)
         response = requests.post(url, headers=headers, json=payload)
         response.raise_for_status()
         
