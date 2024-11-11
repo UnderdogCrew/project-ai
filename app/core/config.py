@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY")
     MONGODB_COLLECTION_DATA_MANAGEMENT: str = os.environ.get("MONGODB_COLLECTION_DATA_MANAGEMENT")
 
+    # WhatsApp Settings
+    WHATSAPP_ACCESS_TOKEN: str = os.environ.get("WHATSAPP_ACCESS_TOKEN")
+    WHATSAPP_PHONE_NUMBER_ID: str = os.environ.get("WHATSAPP_PHONE_NUMBER_ID")
+
     # If you need to construct the full URL with authentication
     @property
     def mongodb_connection_string(self) -> str:
@@ -41,5 +45,6 @@ class Settings(BaseSettings):
 
     class Config:
         case_sensitive = True
+        env_file = ".env"
 
 settings = Settings() 

@@ -10,7 +10,7 @@ import fitz  # PyMuPDF for extracting Images from PDFs
 import sys
 from langchain.text_splitter import CharacterTextSplitter
 from bs4 import BeautifulSoup
-from app.mamage_data.scrap_sitemaps import find_all_urls, clean_and_extract_content
+from app.manage_data.scrap_sitemaps import find_all_urls, clean_and_extract_content
 from langchain.text_splitter import CharacterTextSplitter
 import re
 from dotenv import load_dotenv
