@@ -34,7 +34,8 @@ class Settings(BaseSettings):
     # WhatsApp Settings
     WHATSAPP_ACCESS_TOKEN: str = os.environ.get("WHATSAPP_ACCESS_TOKEN")
     WHATSAPP_PHONE_NUMBER_ID: str = os.environ.get("WHATSAPP_PHONE_NUMBER_ID")
-
+    
+    
     # If you need to construct the full URL with authentication
     @property
     def mongodb_connection_string(self) -> str:
