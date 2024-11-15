@@ -94,9 +94,10 @@ async def get_rag_configs(
     
     configs = []
     async for config in cursor:
+        print(config)
         config["id"] = str(config.pop("_id"))
-        config.pop("vector_store_api_key", None)
-        config.pop("llm_api_key", None)
+        # config.pop("vector_store_api_key", None)
+        # config.pop("llm_api_key", None)
         config.pop("user_id", None)
         configs.append(config)
     

@@ -25,6 +25,8 @@ class RAGConfigResponse(BaseModel):
     vector_store: str
     vector_store_url: str
     llm_embedding_model: str
+    vector_store_api_key: str
+    llm_api_key: str
     top_k_similarity: int
     created_at: str = Field(..., description="Timestamp when the configuration was created")
 
