@@ -27,6 +27,7 @@ async def create_agent(
             id=str(result.inserted_id),
             name=document["name"],
             environment=document["environment"],
+            instructions=document["instructions"],
             system_prompt=document["system_prompt"],
             description=document["description"]
         )
@@ -64,6 +65,7 @@ async def list_agents(
                 AgentResponse(
                     id=str(agent["_id"]),
                     name=agent["name"],
+                    instructions=agent["instructions"],
                     environment=agent["environment"],
                     system_prompt=agent["system_prompt"],
                     description=agent["description"]
@@ -101,6 +103,7 @@ async def update_agent(
             id=str(result["_id"]),
             name=result["name"],
             environment=result["environment"],
+            instructions=result["instructions"],
             system_prompt=result["system_prompt"],
             description=result["description"]
         )
