@@ -33,6 +33,7 @@ class EnvironmentUpdatePayload(BaseModel):
 class AgentConfig(BaseModel):
     name: str
     environment: str
+    instructions: Optional[str] = None
     system_prompt: str
     description: Optional[str] = None
 
@@ -40,6 +41,7 @@ class AgentResponse(BaseModel):
     id: str
     name: str
     environment: str
+    instructions: Optional[str] = None
     system_prompt: str
     description: Optional[str] = None
 
@@ -51,5 +53,6 @@ class AgentUpdatePayload(BaseModel):
     agent_id: str
     name: Optional[str] = None
     environment: Optional[str] = None
+    instructions: Optional[str] = None
     system_prompt: Optional[str] = None
     description: Optional[str] = None
