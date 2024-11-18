@@ -34,7 +34,17 @@ class Settings(BaseSettings):
     # WhatsApp Settings
     WHATSAPP_ACCESS_TOKEN: str = os.environ.get("WHATSAPP_ACCESS_TOKEN")
     WHATSAPP_PHONE_NUMBER_ID: str = os.environ.get("WHATSAPP_PHONE_NUMBER_ID")
+    
+    # Jwt Settings
+    JWT_SECRET_KEY: str = os.environ.get("JWT_SECRET_KEY")
+    JWT_ALGORITHM: str = os.environ.get("JWT_ALGORITHM")
 
+    #AWS credentials
+    AWS_ACCESS_KEY_ID: str = os.environ.get("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY: str = os.environ.get("AWS_ACCESS_KEY_ID")
+    AWS_REGION: str = os.environ.get("AWS_ACCESS_KEY_ID")
+    AWS_S3_BUCKET: str = os.environ.get("AWS_ACCESS_KEY_ID")
+    
     # If you need to construct the full URL with authentication
     @property
     def mongodb_connection_string(self) -> str:
