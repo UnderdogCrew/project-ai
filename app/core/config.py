@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY")
     MONGODB_COLLECTION_DATA_MANAGEMENT: str = os.environ.get("MONGODB_COLLECTION_DATA_MANAGEMENT")
     MONGODB_COLLECTION_AGENT_STUDIO: str = os.environ.get("MONGODB_COLLECTION_AGENT_STUDIO")
-
+    MONGODB_COLLECTION_AGENT_CHAT: str = os.environ.get("MONGODB_COLLECTION_AGENT_CHAT")
     # WhatsApp Settings
     WHATSAPP_ACCESS_TOKEN: str = os.environ.get("WHATSAPP_ACCESS_TOKEN")
     WHATSAPP_PHONE_NUMBER_ID: str = os.environ.get("WHATSAPP_PHONE_NUMBER_ID")

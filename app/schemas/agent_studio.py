@@ -29,3 +29,30 @@ class EnvironmentUpdatePayload(BaseModel):
     features: Optional[List[dict]] = None
     tools: Optional[List[str]] = None
     llm_config: Optional[LLMConfig] = None
+
+class AgentConfig(BaseModel):
+    name: str
+    environment: str
+    instructions: Optional[str] = None
+    system_prompt: str
+    description: Optional[str] = None
+
+class AgentResponse(BaseModel):
+    id: str
+    name: str
+    environment: str
+    instructions: Optional[str] = None
+    system_prompt: str
+    description: Optional[str] = None
+
+class PaginatedAgentResponse(BaseModel):
+    total: int
+    data: List[AgentResponse]
+
+class AgentUpdatePayload(BaseModel):
+    agent_id: str
+    name: Optional[str] = None
+    environment: Optional[str] = None
+    instructions: Optional[str] = None
+    system_prompt: Optional[str] = None
+    description: Optional[str] = None

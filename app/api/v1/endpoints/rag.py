@@ -19,6 +19,7 @@ class RAGConfigUpdate(BaseModel):
     rag_name: Optional[str] = None
     vector_store: Optional[str] = None
     vector_store_url: Optional[str] = None
+    vector_store_api_key: Optional[str] = None
     llm_embedding_model: Optional[str] = None
     llm_api_key: Optional[str] = None
     top_k_similarity: Optional[int] = None
@@ -94,9 +95,10 @@ async def get_rag_configs(
     
     configs = []
     async for config in cursor:
+        print(config)
         config["id"] = str(config.pop("_id"))
-        config.pop("vector_store_api_key", None)
-        config.pop("llm_api_key", None)
+        # config.pop("vector_store_api_key", None)
+        # config.pop("llm_api_key", None)
         config.pop("user_id", None)
         configs.append(config)
     

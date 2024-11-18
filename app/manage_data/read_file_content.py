@@ -10,7 +10,6 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from app.core.config import settings
-from pydantic import Field, validator
 from langchain.schema import Document
 
 
