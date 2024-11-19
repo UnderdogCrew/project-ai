@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, HttpUrl
 from typing import Optional
 
+
 class RAGConfigCreate(BaseModel):
     """Schema for creating a new RAG configuration"""
     rag_name: str = Field(..., description="Unique name for the RAG configuration")
@@ -17,6 +18,7 @@ class RAGConfigCreate(BaseModel):
         ge=1,
         description="Number of top similar documents to retrieve"
     )
+
 
 class RAGConfigResponse(BaseModel):
     """Schema for RAG configuration response"""

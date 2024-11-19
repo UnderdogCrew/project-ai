@@ -10,9 +10,11 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
+
 class PaginatedRAGResponse(BaseModel):
     total: int
     items: List[RAGConfigResponse]
+
 
 class RAGConfigUpdate(BaseModel):
     rag_id: str
@@ -23,14 +25,15 @@ class RAGConfigUpdate(BaseModel):
     llm_embedding_model: Optional[str] = None
     llm_api_key: Optional[str] = None
     top_k_similarity: Optional[int] = None
-    
+
     class Config:
         extra = "forbid"
 
+
 @router.post("/", response_model=RAGConfigResponse)
 async def create_rag_config(
-    rag_config: RAGConfigCreate,
-    db: AsyncIOMotorClient = Depends(get_database)
+        rag_config: RAGConfigCreate,
+        db: AsyncIOMotorClient = Depends(get_database)
 ):
     """
     Create a new RAG configuration
@@ -55,62 +58,61 @@ async def create_rag_config(
 
     # Insert the new RAG config
     result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_RAG_CONFIGS].insert_one(rag_dict)
-    
+
     # Return the created config
     return RAGConfigResponse(
         id=str(result.inserted_id),
-        **{k: v for k, v in rag_dict.items() if k not in ['vector_store_api_key', 'llm_api_key', 'user_id']}
+        **{k: v for k, v in rag_dict.items() if k not in ['user_id']}
     )
+
 
 @router.get("/", response_model=PaginatedRAGResponse)
 async def get_rag_configs(
-    rag_id: Optional[str] = None,
-    search: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 10,
-    db: AsyncIOMotorClient = Depends(get_database)
+        rag_id: Optional[str] = None,
+        search: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 10,
+        db: AsyncIOMotorClient = Depends(get_database)
 ):
     """
     Get RAG configurations with filtering, search, and pagination
     """
     # Build filter query
     query = {"user_id": "1"}
-    
+
     if rag_id:
         try:
             query["_id"] = ObjectId(rag_id)
         except:
             raise HTTPException(status_code=400, detail="Invalid RAG ID format")
-    
+
     if search:
         query["rag_name"] = {"$regex": search, "$options": "i"}
 
     # Get total count
     total = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_RAG_CONFIGS].count_documents(query)
-    
+
     # Get paginated results
     cursor = db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_RAG_CONFIGS].find(
         query
     ).sort("created_at", -1).skip(skip).limit(limit)
-    
+
     configs = []
     async for config in cursor:
-        print(config)
         config["id"] = str(config.pop("_id"))
-        # config.pop("vector_store_api_key", None)
-        # config.pop("llm_api_key", None)
         config.pop("user_id", None)
         configs.append(config)
-    
+
     return PaginatedRAGResponse(
         total=total,
         items=configs
     )
 
+
 @router.patch("/", response_model=RAGConfigResponse)
 async def update_rag_config(
-    updates: RAGConfigUpdate,
-    db: AsyncIOMotorClient = Depends(get_database)
+        updates: RAGConfigUpdate,
+        db: AsyncIOMotorClient = Depends(get_database)
 ):
     """
     Update a RAG configuration by ID
@@ -125,7 +127,7 @@ async def update_rag_config(
         "_id": rag_object_id,
         "user_id": "1"
     })
-    
+
     if not existing_rag:
         raise HTTPException(status_code=404, detail="RAG configuration not found")
 
@@ -147,7 +149,7 @@ async def update_rag_config(
         k: v for k, v in updates.model_dump(exclude_unset=True).items()
         if v is not None and k != 'rag_id'  # Exclude rag_id and None values
     }
-    
+
     if not update_data:
         raise HTTPException(status_code=400, detail="No valid fields to update")
 
@@ -164,16 +166,17 @@ async def update_rag_config(
     updated_rag = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_RAG_CONFIGS].find_one(
         {"_id": rag_object_id}
     )
-    
+
     updated_rag["id"] = str(updated_rag.pop("_id"))
     updated_rag.pop("user_id", None)
-    
+
     return updated_rag
+
 
 @router.delete("/{rag_id}", response_model=dict)
 async def delete_rag_config(
-    rag_id: str = Path(..., description="The ID of the RAG config to delete"),
-    db: AsyncIOMotorClient = Depends(get_database)
+        rag_id: str = Path(..., description="The ID of the RAG config to delete"),
+        db: AsyncIOMotorClient = Depends(get_database)
 ):
     """
     Delete a RAG configuration by ID
@@ -188,7 +191,7 @@ async def delete_rag_config(
         "_id": rag_object_id,
         "user_id": "1"
     })
-    
+
     if not existing_rag:
         raise HTTPException(status_code=404, detail="RAG configuration not found")
 
