@@ -1,32 +1,20 @@
 import requests
 import os
 from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain_community.vectorstores.pgvector import PGVector
-from sqlalchemy.orm import Session
 from datetime import datetime
 from langchain_qdrant import QdrantVectorStore
-import fitz  # PyMuPDF for extracting Images from PDFs
-import sys
 from langchain.text_splitter import CharacterTextSplitter
-from bs4 import BeautifulSoup
 from app.manage_data.scrap_sitemaps import find_all_urls, clean_and_extract_content
 from langchain.text_splitter import CharacterTextSplitter
 import re
-from dotenv import load_dotenv
-from os.path import join, dirname
-import pymupdf4llm
-from langchain_community.document_loaders.csv_loader import CSVLoader
 from qdrant_client.http.models import PointStruct, VectorParams
 from qdrant_client import QdrantClient
-from llama_parse import LlamaParse
 from openai import OpenAI
 from langchain_core.documents import Document
+from app.api.v1.endpoints.chat.db_helper import save_website_scrapper_logs, update_website_scrapper_logs
 
 client = OpenAI()
 import uuid
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
 from app.core.config import settings
 
 
@@ -142,6 +130,16 @@ def scrap_website(account_id, knowledge_source, user_id):
             if len(final_links) == 0:
                 final_links = [url]
 
+            for _logs in final_links:
+                generate_logs = {
+                    "rag_id": account_id,
+                    "created_at": datetime.now(),
+                    "link": _logs,
+                    "page_content": "",
+                    "status": "INPROGRESS"
+                }
+                save_website_scrapper_logs(data=generate_logs)
+
             total_count = len(final_links)
             success_links = len(final_links)
             for _link in final_links:
@@ -185,6 +183,15 @@ def scrap_website(account_id, knowledge_source, user_id):
                             force_recreate=False,
                         )
                         print(f"data stored in qdrant {embedding_id}")
+
+                        update_logs = {
+                            "rag_id": account_id,
+                            "link": _link,
+                            "page_content": cleaned_string,
+                            "status": "SUCCESS"
+                        }
+                        update_website_scrapper_logs(data=update_logs)
+
                 except Exception as e:
                     print("reason", e)
                     success_links -= 1

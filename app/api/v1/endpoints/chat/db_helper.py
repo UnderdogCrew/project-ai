@@ -42,3 +42,34 @@ def fetch_manage_data(search_query, skip, limit):
     )
     client.close()
     return collection  # Returning the query result
+
+
+def save_website_scrapper_logs(data):
+    client = MongoClient(settings.MONGODB_URI)
+    db = client[settings.MONGODB_DB_NAME]
+    
+    result = db[settings.MONGODB_COLLECTION_RAG_LOGS].insert_one(data)
+    client.close()
+    
+    return str(result.inserted_id)  # Return the ID of the inserted document
+
+
+def update_website_scrapper_logs(data):
+    client = MongoClient(settings.MONGODB_URI)
+    db = client[settings.MONGODB_DB_NAME]
+    
+    result = db[settings.MONGODB_COLLECTION_RAG_LOGS].update_one(
+        {
+            "rag_id": data['rag_id'],
+            "link": data['link']
+        },
+        {
+            "$set": {
+                "page_content": data['page_content'],
+                "status": data['status']
+            }
+        }
+    )
+    client.close()
+    
+    return str(result.modified_count)  # Return the ID of the inserted document

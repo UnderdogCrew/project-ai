@@ -11,6 +11,8 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from app.core.config import settings
 from langchain.schema import Document
+from datetime import datetime
+from app.api.v1.endpoints.chat.db_helper import save_website_scrapper_logs, update_website_scrapper_logs
 
 
 qdrant_api_url = settings.QDRANT_API_URL
@@ -83,6 +85,16 @@ def read_json(content):
 def file_data(url, rag_manage_id):
     file_content = read_file_from_url(url)
 
+    
+    generate_logs = {
+        "rag_id": rag_manage_id,
+        "created_at": datetime.now(),
+        "link": url,
+        "page_content": "",
+        "status": "INPROGRESS"
+    }
+    save_website_scrapper_logs(data=generate_logs)
+
     # Make a GET request to the URL
     response = requests.get(url)
 
@@ -103,7 +115,7 @@ def file_data(url, rag_manage_id):
                 page_content = page_content + "\n" + _i.text
     except:
         page_content = pymupdf4llm.to_markdown(local_filename)
-    print(file_content)
+
     text_splitter = CharacterTextSplitter(separator="\n\n", chunk_size=5000, chunk_overlap=0, length_function=len)
     docs = [Document(page_content=file_content)]
     text_chunks = text_splitter.split_documents(docs)
@@ -119,5 +131,12 @@ def file_data(url, rag_manage_id):
         force_recreate=True,
     )
     print(f'File downloaded and saved as {local_filename}')
+    update_logs = {
+        "rag_id": rag_manage_id,
+        "link": url,
+        "page_content": page_content,
+        "status": "SUCCESS"
+    }
+    update_website_scrapper_logs(data=update_logs)
     os.remove(local_filename)
     return file_content, page_content
