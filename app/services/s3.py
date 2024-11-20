@@ -24,13 +24,14 @@ class S3Service:
     ) -> Optional[str]:
         try:
             file_key = f"{folder}/{str(uuid.uuid4())}{file_extension}"
+
             # Upload file to S3
             self.s3_client.upload_fileobj(
                 file.file,
                 self.bucket_name,
-                file_key
+                file_key,
+                ExtraArgs={'ACL': 'public-read','ContentType': 'auto'}
             )
-            
             # Generate URL
             url = f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{file_key}"
             return url
