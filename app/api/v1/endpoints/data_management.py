@@ -195,6 +195,10 @@ async def list_data_management(
         doc.pop("user_id", None)
         items.append(doc)
 
+    # Validate if items list is empty
+    if not items:
+        raise HTTPException(status_code=404, detail="No data management requests found")
+
     return {
         "total": total,
         "items": items
