@@ -5,7 +5,6 @@ from app.core.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
 from fastapi.middleware.cors import CORSMiddleware
 
-
 app = FastAPI(title=settings.PROJECT_NAME)
 
 # Add CORS middleware
@@ -28,10 +27,12 @@ app.include_router(agent_environment.router, prefix=f"{settings.API_V1_STR}/envi
 app.include_router(agent.router, prefix=f"{settings.API_V1_STR}/agent", tags=["agent"])
 app.include_router(agent_chat.router, prefix=f"{settings.API_V1_STR}/chat", tags=["chat"])
 
+
 @app.on_event("startup")
 async def startup_db_client():
     await connect_to_mongo()
 
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    await close_mongo_connection() 
+    await close_mongo_connection()

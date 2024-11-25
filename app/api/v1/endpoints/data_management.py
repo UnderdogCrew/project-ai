@@ -23,8 +23,10 @@ from uuid import uuid4
 import sys
 from app.core.config import settings
 import os
+
 os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
 from openai import OpenAI
+
 client = OpenAI()
 
 QDRANT_URL = settings.QDRANT_API_URL
@@ -36,28 +38,28 @@ qdrant_client = QdrantClient(
     timeout=300
 )
 
-
 import threading
 from typing import Optional, Union
 
+
 def process_data_source(
-    source_type: DataSourceType,
-    rag_object_id: ObjectId,
-    files: Optional[List[str]] = None,
-    website_url: Optional[str] = None,
-    raw_text: Optional[str] = None
+        source_type: DataSourceType,
+        rag_object_id: ObjectId,
+        files: Optional[List[str]] = None,
+        website_url: Optional[str] = None,
+        raw_text: Optional[str] = None
 ) -> None:
     """Process different types of data sources in a separate thread"""
     if source_type == DataSourceType.FILE and files:
         for _file in files:
             file_data(url=_file, rag_manage_id=rag_object_id)
-            
+
     elif source_type == DataSourceType.WEBSITE and website_url:
         scrap_website(rag_object_id, website_url, "1")
-        
+
     elif source_type == DataSourceType.RAW_TEXT and raw_text:
         embedding_id = f"{str(rag_object_id)}"
-        
+
         if not qdrant_client.collection_exists(embedding_id):
             qdrant_client.create_collection(
                 collection_name=embedding_id,
@@ -72,7 +74,7 @@ def process_data_source(
                 p_uuid = str(uuid.uuid4())
                 points.append(
                     PointStruct(id=p_uuid, vector=resp.embedding,
-                              payload={"metadata": metadata, "page_content": raw_text})
+                                payload={"metadata": metadata, "page_content": raw_text})
                 )
                 qdrant_client.upsert(
                     collection_name=embedding_id,
@@ -82,7 +84,7 @@ def process_data_source(
             exc_type, exc_obj, exc_tb = sys.exc_info()
             print(f"An error occurred on line {exc_tb.tb_lineno}: {str(exc_obj)}")
             raise Exception("Error processing raw text")
-    
+
     return True
 
 
@@ -94,12 +96,14 @@ def _create_embeddings(input: str):
     content = results.data[0]
     return content
 
+
 router = APIRouter()
+
 
 @router.post("/", response_model=ManageDataResponse)
 async def create_data_management(
-    data: CreateManageDataSchema,
-    db: AsyncIOMotorClient = Depends(get_database)
+        data: CreateManageDataSchema,
+        db: AsyncIOMotorClient = Depends(get_database)
 ):
     """Create a new data management request"""
     # Validate RAG ID
@@ -113,7 +117,7 @@ async def create_data_management(
         "_id": rag_object_id,
         "user_id": "1"
     })
-    
+
     if not existing_rag:
         raise HTTPException(status_code=404, detail="RAG configuration not found")
 
@@ -151,44 +155,44 @@ async def create_data_management(
     }
 
     result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].insert_one(new_data)
-    
+
     # Get and return the created document
     created_data = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].find_one(
         {"_id": result.inserted_id}
     )
     created_data["id"] = str(created_data.pop("_id"))
     created_data.pop("user_id", None)
-    
+
     return created_data
 
 
 @router.get("/", response_model=ManageDataListResponse)
 async def list_data_management(
-    rag_id: Optional[str] = None,
-    status: Optional[DataStatus] = None,
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=10, ge=1, le=100),
-    db: AsyncIOMotorClient = Depends(get_database)
+        rag_id: Optional[str] = None,
+        status: Optional[DataStatus] = None,
+        skip: int = Query(default=0, ge=0),
+        limit: int = Query(default=10, ge=1, le=100),
+        db: AsyncIOMotorClient = Depends(get_database)
 ):
     """List all data management requests"""
     query = {"user_id": "1"}
-    
+
     if rag_id:
         try:
             query["rag_id"] = str(ObjectId(rag_id))
         except:
             raise HTTPException(status_code=400, detail="Invalid RAG ID format")
-    
+
     if status:
         query["status"] = status
 
     # Get total count
     total = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].count_documents(query)
-    
+
     # Get items with pagination
     cursor = db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].find(query)
     cursor.skip(skip).limit(limit).sort("created_at", -1)
-    
+
     items = []
     async for doc in cursor:
         doc["id"] = str(doc.pop("_id"))
@@ -204,10 +208,11 @@ async def list_data_management(
         "items": items
     }
 
+
 @router.get("/{data_id}", response_model=ManageDataResponse)
 async def get_data_management(
-    data_id: str = Path(..., description="The ID of the data management request"),
-    db: AsyncIOMotorClient = Depends(get_database)
+        data_id: str = Path(..., description="The ID of the data management request"),
+        db: AsyncIOMotorClient = Depends(get_database)
 ):
     """Get a specific data management request"""
     try:
@@ -219,19 +224,20 @@ async def get_data_management(
         "_id": data_object_id,
         "user_id": "1"
     })
-    
+
     if not data:
         raise HTTPException(status_code=404, detail="Data management request not found")
 
     data["id"] = str(data.pop("_id"))
     data.pop("user_id", None)
-    
+
     return data
+
 
 @router.delete("/{data_id}", response_model=dict)
 async def delete_data_management(
-    data_id: str = Path(..., description="The ID of the data management request to delete"),
-    db: AsyncIOMotorClient = Depends(get_database)
+        data_id: str = Path(..., description="The ID of the data management request to delete"),
+        db: AsyncIOMotorClient = Depends(get_database)
 ):
     """Delete a data management request"""
     try:
@@ -244,7 +250,7 @@ async def delete_data_management(
         "_id": data_object_id,
         "user_id": "1"
     })
-    
+
     if not existing_data:
         raise HTTPException(status_code=404, detail="Data management request not found")
 
@@ -259,10 +265,11 @@ async def delete_data_management(
 
     return {"message": "Data management request deleted successfully"}
 
+
 @router.patch("/", response_model=ManageDataResponse)
 async def update_data_management(
-    data: UpdateManageDataSchema,
-    db: AsyncIOMotorClient = Depends(get_database)
+        data: UpdateManageDataSchema,
+        db: AsyncIOMotorClient = Depends(get_database)
 ):
     """Update an existing data management request"""
     if not data.data_id:
@@ -278,7 +285,7 @@ async def update_data_management(
         "_id": data_object_id,
         "user_id": "1"
     })
-    
+
     if not existing_data:
         raise HTTPException(status_code=404, detail="Data management request not found")
 
@@ -331,8 +338,5 @@ async def update_data_management(
     )
     updated_data["id"] = str(updated_data.pop("_id"))
     updated_data.pop("user_id", None)
-    
+
     return updated_data
-
-
-

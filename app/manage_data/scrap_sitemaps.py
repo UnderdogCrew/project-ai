@@ -4,12 +4,15 @@ import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 import hashlib
 
+
 def generate_embedding(text):
     """Generate a simple hash-based embedding for demonstration purposes."""
     return int(hashlib.sha256(text.encode('utf-8')).hexdigest(), 16) % (10 ** 8)
 
+
 def is_xml(response):
     return 'xml' in response.headers.get('Content-Type', '')
+
 
 def fetch_url(url, headers):
     try:
@@ -19,6 +22,7 @@ def fetch_url(url, headers):
     except requests.RequestException as e:
         print(f"Error accessing {url}: {e}")
     return None
+
 
 def parse_sitemap(url, headers):
     response = fetch_url(url, headers)
@@ -42,6 +46,7 @@ def parse_sitemap(url, headers):
         except ET.ParseError as e:
             print(f"Error parsing XML from {url}: {e}")
     return [], []
+
 
 def find_all_urls(domain):
     headers = {
@@ -85,13 +90,16 @@ def find_all_urls(domain):
 
     return list(actual_urls)
 
+
 def clean_and_extract_content(url):
     # Fetch webpage content
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'html.parser')
 
     # Remove non-content elements
-    for tag in soup(["input", "script", "style", "header", "nav", "aside", "form", "iframe", "noscript", "button", "link", "meta"]):
+    for tag in soup(
+            ["input", "script", "style", "header", "nav", "aside", "form", "iframe", "noscript", "button", "link",
+             "meta"]):
         tag.decompose()
 
     # Remove non-content elements by class name
@@ -119,7 +127,7 @@ def clean_and_extract_content(url):
     # Define tags of interest for content extraction
     content_tags = ['p', 'span', 'li', 'article', 'section', 'div']  # Exclude 'div' from the list
     title = soup.title.string.strip() if soup.title else ''
-    
+
     # Iterate over elements to organize them under section start tags
     for element in soup.find_all(['h1', 'h2', 'p', 'span', 'li', 'article', 'section', 'div', 'h3', 'h4', 'h5']):
         if element.name in section_start_tags:
@@ -152,7 +160,8 @@ def clean_and_extract_content(url):
                     current_section['content'].append(content_data)
 
     # Extract metadata
-    description = soup.find('meta', attrs={'name': 'description'})['content'].strip() if soup.find('meta', attrs={'name': 'description'}) else ''
+    description = soup.find('meta', attrs={'name': 'description'})['content'].strip() if soup.find('meta', attrs={
+        'name': 'description'}) else ''
     language = soup.find('html')['lang'] if soup.find('html') and 'lang' in soup.find('html').attrs else ''
 
     # Construct metadata object
