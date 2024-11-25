@@ -8,7 +8,7 @@ def get_agent_data(agent_id):
     """
     Fetch agent data from the MongoDB database using the provided agent_id.
     """
-    client = MongoClient(settings.MONGODB_URI)
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]
     agent_data = db[settings.MONGODB_COLLECTION_AGENT_STUDIO].find_one({"_id": ObjectId(agent_id)})
     client.close()
@@ -22,7 +22,7 @@ def save_ai_request(request_data):
     :param request_data: A dictionary containing the request data to be saved.
     :return: The ID of the saved document.
     """
-    client = MongoClient(settings.MONGODB_URI)
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]
     
     # Add a timestamp to the request data
@@ -35,7 +35,7 @@ def save_ai_request(request_data):
 
 
 def fetch_manage_data(search_query, skip, limit):
-    client = MongoClient(settings.MONGODB_URI)
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]
     collection = db[settings.MONGODB_COLLECTION_DATA_MANAGEMENT].find_one(
         {"_id": ObjectId(search_query)}
@@ -45,7 +45,7 @@ def fetch_manage_data(search_query, skip, limit):
 
 
 def save_website_scrapper_logs(data):
-    client = MongoClient(settings.MONGODB_URI)
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]
     
     result = db[settings.MONGODB_COLLECTION_RAG_LOGS].insert_one(data)
@@ -55,7 +55,7 @@ def save_website_scrapper_logs(data):
 
 
 def update_website_scrapper_logs(data):
-    client = MongoClient(settings.MONGODB_URI)
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]
     
     result = db[settings.MONGODB_COLLECTION_RAG_LOGS].update_one(
