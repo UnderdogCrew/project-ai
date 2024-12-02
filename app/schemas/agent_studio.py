@@ -9,7 +9,7 @@ class LLMConfig(BaseModel):
 class EnvironmentConfig(BaseModel):
     name: str
     features: List[dict] = []
-    tools: List[str] = []
+    tools: List[dict] = []
     llm_config: LLMConfig
 
 class EnvironmentResponse(BaseModel):
