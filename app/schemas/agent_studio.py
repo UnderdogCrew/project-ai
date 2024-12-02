@@ -1,10 +1,12 @@
 from pydantic import BaseModel
 from typing import List, Dict, Optional, Union
 
+
 class LLMConfig(BaseModel):
     provider: str
     model: str
     config: Dict[str, float]
+
 
 class EnvironmentConfig(BaseModel):
     name: str
@@ -12,23 +14,27 @@ class EnvironmentConfig(BaseModel):
     tools: List[dict] = []
     llm_config: LLMConfig
 
+
 class EnvironmentResponse(BaseModel):
     id: str
     name: str
     features: List[dict] = []
     tools: List[dict] = []
     llm_config: LLMConfig
-    
+
+
 class PaginatedEnvironmentResponse(BaseModel):
     total: int
     data: List[EnvironmentResponse]
+
 
 class EnvironmentUpdatePayload(BaseModel):
     environment_id: str
     name: Optional[str] = None
     features: Optional[List[dict]] = None
-    tools: Optional[List[str]] = None
+    tools: Optional[List[dict]] = None
     llm_config: Optional[LLMConfig] = None
+
 
 class AgentConfig(BaseModel):
     name: str
@@ -36,6 +42,7 @@ class AgentConfig(BaseModel):
     instructions: Optional[str] = None
     system_prompt: str
     description: Optional[str] = None
+
 
 class AgentResponse(BaseModel):
     id: str
@@ -45,9 +52,11 @@ class AgentResponse(BaseModel):
     system_prompt: str
     description: Optional[str] = None
 
+
 class PaginatedAgentResponse(BaseModel):
     total: int
     data: List[AgentResponse]
+
 
 class AgentUpdatePayload(BaseModel):
     agent_id: str
