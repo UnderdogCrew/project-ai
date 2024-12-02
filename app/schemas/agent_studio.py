@@ -16,7 +16,7 @@ class EnvironmentResponse(BaseModel):
     id: str
     name: str
     features: List[dict] = []
-    tools: List[str] = []
+    tools: List[dict] = []
     llm_config: LLMConfig
     
 class PaginatedEnvironmentResponse(BaseModel):
