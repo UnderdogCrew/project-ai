@@ -1,4 +1,4 @@
-name: Whatsapp service Deploy
+name: Project-AI service Deploy
 
 on:
   push:
