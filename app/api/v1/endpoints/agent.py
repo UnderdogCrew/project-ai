@@ -13,16 +13,17 @@ from bson import ObjectId
 
 router = APIRouter()
 
+
 @router.post("/", response_model=AgentResponse)
 async def create_agent(
         config: AgentConfig,
         db: AsyncIOMotorClient = Depends(get_database)
-    ):
+):
     try:
         # Create a single document for the agent
         document = config.model_dump()
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].insert_one(document)
-        
+
         return AgentResponse(
             id=str(result.inserted_id),
             name=document["name"],
@@ -34,6 +35,7 @@ async def create_agent(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/", response_model=PaginatedAgentResponse)
 async def list_agents(
         agent_id: str = None,
@@ -41,7 +43,7 @@ async def list_agents(
         limit: int = 10,
         search: str = None,
         db: AsyncIOMotorClient = Depends(get_database)
-    ):
+):
     try:
         # Build query filters
         query = {}
@@ -57,8 +59,9 @@ async def list_agents(
         total = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].count_documents(query)
 
         # Execute query with pagination
-        agents = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].find(query).skip(skip).limit(limit).to_list(length=None)
-        
+        agents = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].find(query).skip(skip).limit(
+            limit).to_list(length=None)
+
         return PaginatedAgentResponse(
             total=total,
             data=[
@@ -76,17 +79,18 @@ async def list_agents(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.patch("/", response_model=AgentResponse)
 async def update_agent(
         payload: AgentUpdatePayload,
         db: AsyncIOMotorClient = Depends(get_database)
-    ):
+):
     try:
         # Build update document based on provided fields
         update_doc = {}
         if payload.model_dump():
             update_doc = payload.model_dump()
-        
+
         if not update_doc:
             raise HTTPException(status_code=400, detail="No update data provided")
 
@@ -95,10 +99,10 @@ async def update_agent(
             {"$set": update_doc},
             return_document=True
         )
-        
+
         if not result:
             raise HTTPException(status_code=404, detail="Agent not found")
-        
+
         return AgentResponse(
             id=str(result["_id"]),
             name=result["name"],
@@ -110,17 +114,19 @@ async def update_agent(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.delete("/{agent_id}", status_code=204)
 async def delete_agent(
         agent_id: str,
         db: AsyncIOMotorClient = Depends(get_database)
-    ):
+):
     try:
-        result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].delete_one({"_id": ObjectId(agent_id)})
-        
+        result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].delete_one(
+            {"_id": ObjectId(agent_id)})
+
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Agent not found")
-            
+
         return None
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=str(e))
