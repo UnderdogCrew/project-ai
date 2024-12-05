@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.db.mongodb import get_database
-from app.schemas.agent_app import AgentAppCreate, AgentAppUpdate, AgentAppResponse
+from app.schemas.agent_app import AgentAppCreate, AgentAppUpdate, AgentAppResponse,PaginatedAgentAppResponse
 from app.core.config import settings
 from bson import ObjectId
+from typing import List, Optional
 
 router = APIRouter()
 
@@ -24,40 +25,109 @@ async def create_agent_app(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{app_id}", response_model=AgentAppResponse)
-async def read_agent_app(app_id: str, db: AsyncIOMotorClient = Depends(get_database)):
+@router.get("/", response_model=PaginatedAgentAppResponse)
+async def list_agent_apps(
+    skip: int = 0,
+    limit: int = 10,
+    created_by_id: Optional[str] = None, 
+    search: Optional[str] = None,
+    is_public: Optional[bool] = None,
+    app_id: Optional[str] = None,
+    db: AsyncIOMotorClient = Depends(get_database)
+):
     try:
-        # Fetch the agent app
-        app = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_APP].find_one({"_id": ObjectId(app_id)})
-        if app is None:
-            raise HTTPException(status_code=404, detail="Agent app not found")
+        # Build the query filters
+        query = {}
+        if app_id:
+            query["_id"] = ObjectId(app_id)
 
-        # Fetch the user details using createdById
-        user = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_USER].find_one({"_id": ObjectId(app["createdById"])})
-        created_by_name = user["name"] if user else "Unknown"
+        if search:
+            query["appName"] = {"$regex": search, "$options": "i"}  # Case-insensitive search
+        
+        if is_public:
+            query["isPublic"] = True
+        
+        if created_by_id:
+            query["createdById"] = created_by_id  # Use actual user ID logic
 
-        # Return the response including the user's name
-        return AgentAppResponse(id=str(app["_id"]), **app, createdByName=created_by_name)
+        # Fetch total count for pagination
+        total = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_APP].count_documents(query)
+
+        if total == 0:
+            raise HTTPException(status_code=404, detail="Agent apps not found.")
+        # Use aggregation to perform a lookup for user details
+        pipeline = [
+            {"$match": query},
+            {
+                "$lookup": {
+                    "from": settings.MONGODB_COLLECTION_USER,
+                    "let": {"createdById": "$createdById"},
+                    "pipeline": [
+                        {
+                            "$match": {
+                                "$expr": {
+                                    "$eq": ["$_id", {"$toObjectId": "$$createdById"}]
+                                }
+                            }
+                        }
+                    ],
+                    "as": "userDetails"
+                }
+            },
+            {
+                "$unwind": {
+                    "path": "$userDetails",
+                    "preserveNullAndEmptyArrays": True  # Keep apps without user details
+                }
+            },
+            {
+                "$project": {
+                    "id": {"$toString": "$_id"},
+                    "agentId": 1,  # Ensure agentId is included
+                    "appName": 1,
+                    "isPublic": 1,
+                    "appIconUrl": 1,
+                    "createdById": 1,
+                    "createdByName": "$userDetails.name",  # Get the user's name
+                    "categories": 1,
+                    "description": 1
+                }
+            },
+            {"$skip": skip},
+            {"$limit": limit}
+        ]
+        apps = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_APP].aggregate(pipeline).to_list(length=None)
+
+        return PaginatedAgentAppResponse(
+            total=total,
+            apps=apps
+        )
     except HTTPException as http_exc:
-        raise http_exc  # Re-raise the HTTPException to preserve the status code
+        raise http_exc
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.patch("/{app_id}", response_model=AgentAppResponse)
-async def patch_agent_app(app_id: str, app: AgentAppUpdate, db: AsyncIOMotorClient = Depends(get_database)):
+@router.patch("/", response_model=AgentAppResponse)
+async def patch_agent_app(app: AgentAppUpdate, db: AsyncIOMotorClient = Depends(get_database)):
     try:
+        # Ensure app_id is provided in the request body
+        if not app.app_id:
+            raise HTTPException(status_code=400, detail="app_id is required in the request body.")
+
         # Prepare the update data, excluding unset fields
         update_data = app.model_dump(exclude_unset=True)
-        
+        update_data.pop('app_id', None)
         # Perform the update operation
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_APP].find_one_and_update(
-            {"_id": ObjectId(app_id)},
+            {"_id": ObjectId(app.app_id)},  # Use agentId to find the document
             {"$set": update_data},
             return_document=True
         )
+        
         # Check if the agent app was found and updated
         if result is None:
             raise HTTPException(status_code=404, detail="Agent app not found")
+        
         # Return the updated agent app response
         return AgentAppResponse(id=str(result["_id"]), **result)
     except HTTPException as http_exc:

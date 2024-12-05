@@ -28,7 +28,7 @@ app.include_router(agent.router, prefix=f"{settings.API_V1_STR}/agent", tags=["a
 app.include_router(agent_chat.router, prefix=f"{settings.API_V1_STR}/chat", tags=["chat"])
 app.include_router(profile.router, prefix=f"{settings.API_V1_STR}/profile", tags=["profile"])
 app.include_router(file_upload.router,prefix=f"{settings.API_V1_STR}/upload",tags=['file_upload'])
-app.include_router(agent_app.router, prefix=f"{settings.API_V1_STR}/agent-app", tags=["agent-app"])
+app.include_router(agent_app.router, prefix=f"{settings.API_V1_STR}/agent/app", tags=["agent-app"])
 
 
 @app.on_event("startup")
