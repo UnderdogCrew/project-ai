@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.v1.endpoints import agent_environment, rag, data_management, whatsapp_msg, agent, profile, file_upload
+from app.api.v1.endpoints import agent_environment, rag, data_management, whatsapp_msg, agent, profile, file_upload, agent_app
 from app.api.v1.endpoints.chat import agent_chat
 from app.core.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
@@ -28,6 +28,7 @@ app.include_router(agent.router, prefix=f"{settings.API_V1_STR}/agent", tags=["a
 app.include_router(agent_chat.router, prefix=f"{settings.API_V1_STR}/chat", tags=["chat"])
 app.include_router(profile.router, prefix=f"{settings.API_V1_STR}/profile", tags=["profile"])
 app.include_router(file_upload.router,prefix=f"{settings.API_V1_STR}/upload",tags=['file_upload'])
+app.include_router(agent_app.router, prefix=f"{settings.API_V1_STR}/agent-app", tags=["agent-app"])
 
 
 @app.on_event("startup")
