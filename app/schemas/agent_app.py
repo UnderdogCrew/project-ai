@@ -19,7 +19,8 @@ class AgentAppBase(BaseModel):
 class AgentAppCreate(AgentAppBase):
     pass
 
-class AgentAppUpdate(AgentAppBase):
+class AgentAppUpdate(BaseModel):
+    app_id: str
     agentId: Optional[str] = None
     isPublic: Optional[bool] = None
     appIconUrl: Optional[str] = None
@@ -34,3 +35,7 @@ class AgentAppResponse(AgentAppBase):
 
     class Config:
         orm_mode = True 
+
+class PaginatedAgentAppResponse(BaseModel):
+    total: int
+    apps: List[AgentAppResponse] 
