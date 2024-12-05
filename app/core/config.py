@@ -44,7 +44,8 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str = os.environ.get("AWS_ACCESS_KEY_ID")
     AWS_REGION: str = os.environ.get("AWS_ACCESS_KEY_ID")
     AWS_S3_BUCKET: str = os.environ.get("AWS_ACCESS_KEY_ID")
-
+    MONGODB_COLLECTION_AGENT_APP: str =os.environ.get("MONGODB_COLLECTION_AGENT_APP")
+    MONGODB_COLLECTION_USER : str= os.environ.get("MONGODB_COLLECTION_USER")
     # If you need to construct the full URL with authentication
     @property
     def mongodb_connection_string(self) -> str:
