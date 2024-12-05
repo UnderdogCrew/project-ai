@@ -38,21 +38,18 @@ def read_file_from_url(url):
     # Get the content type from the headers
     content_type = response.headers.get('Content-Type')
     print("content_type", content_type)
+
     # Handle PDF files
-    if 'pdf' in content_type:
+    try:
         return read_pdf(response.content)
-
-    # Handle JSON files
-    elif 'json' in content_type or url.endswith('.json'):
-        return read_json(response.content)
-
-    # Handle TXT files
-    elif 'text/plain' in content_type or url.endswith('.txt'):
-        return response.text  # Directly return the text content
-
-    else:
-        return "Unsupported file type"
-
+    except:
+        try:
+            return read_json(response.content)
+        except:
+            try:
+                return response.text  # Directly return the text content
+            except:
+                return "Unsupported file type"
 
 def read_pdf(content):
     # Use BytesIO to load the content as a file-like object
