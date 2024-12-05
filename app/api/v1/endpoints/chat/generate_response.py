@@ -259,19 +259,36 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         response_text = agent_response.content
         response_text_as_string = response_text
 
+    # Define regex patterns to exclude
+    exclude_patterns = [
+        r'^Running:',  # Lines starting with 'Running:'
+        r'^- \w+\(',  # Lines starting with '- ' followed by a word and '(' (e.g., '- generate_text(')
+    ]
+    # Split the text into individual lines
+    lines = response_text_as_string.split('\n')
+    # Compile the regex patterns for efficiency
+    compiled_patterns = [re.compile(pattern) for pattern in exclude_patterns]
+
+    # Filter out lines matching any of the compiled patterns
+    filtered_lines = [line for line in lines if
+                      not any(pattern.match(line.strip()) for pattern in compiled_patterns)]
+
+    # Join the filtered lines back into a single string
+    main_content = '\n'.join(filtered_lines).strip()
+
     data = {
         "session_id": request.session_id,
         "agent_id": request.agent_id,
         "response_id": response_id,
         "user_id": request.user_id,
         "message": request.message,
-        "response": response_text_as_string
+        "response": main_content
     }
 
     save_ai_request(request_data=data)
 
     return {
-        "text": response_text_as_string
+        "text": main_content
     }
 
 
