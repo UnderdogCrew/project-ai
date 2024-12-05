@@ -8,4 +8,3 @@ class GenerateAgentChatSchema (BaseModel):
     user_id: str
     message: Optional[str] = None
     schema: Optional[dict] = None
-    file: Optional[str] = None

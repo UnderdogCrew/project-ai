@@ -34,6 +34,13 @@ def save_ai_request(request_data):
     return str(result.inserted_id)  # Return the ID of the inserted document
 
 
+def fetch_ai_requests_data(query):
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
+    db = client[settings.MONGODB_DB_NAME]
+    document = db[settings.MONGODB_COLLECTION_AGENT_CHAT].find_one(query)
+    return document
+
+
 def fetch_manage_data(search_query, skip, limit):
     client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]
