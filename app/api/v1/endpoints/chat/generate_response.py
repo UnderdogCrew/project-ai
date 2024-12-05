@@ -4,7 +4,7 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 import os
 from os.path import dirname
 import re
-from app.api.v1.endpoints.chat.db_helper import get_agent_data as fetch_ai_agent_data, fetch_ai_requests_data
+from app.api.v1.endpoints.chat.db_helper import get_agent_data as fetch_ai_agent_data, fetch_ai_requests_data, get_environment_data
 from bson import ObjectId  # Importing ObjectId to handle MongoDB document IDs
 from app.schemas.agent_chat_schema.chat_schema import GenerateAgentChatSchema
 import requests
@@ -172,19 +172,29 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
     # Fetch agent data using the agent ID from the request
     gpt_data = fetch_ai_agent_data(agent_id=request.agent_id)
 
-    tools = gpt_data[0]['tools']
-    name = gpt_data[0]['name']
-    llm_config = gpt_data[0]['llm_config']
-    prompt = gpt_data[0]['system_prompt']
-    additional_instructions = gpt_data[0]['instructions']
+    agent_environment = get_environment_data(env_id=gpt_data['environment'])
+
+    agent_tools = agent_environment['tools']
+    tools = []
+    for tool in agent_tools:
+        tools.append(
+            {
+                "name": tool['apiName'],
+                "config": tool['config']
+            }
+        )
+    name = gpt_data['name']
+    llm_config = agent_environment['llm_config']
+    prompt = gpt_data['system_prompt']
+    additional_instructions = gpt_data['instructions']
 
     # Set OpenAI API key from the configuration
-    open_ai_api_key = llm_config['api-key']
+    open_ai_api_key = os.getenv("OPENAI_API_KEY")
     os.environ["OPENAI_API_KEY"] = open_ai_api_key
 
     # Initialize variables for RAG (Retrieval-Augmented Generation)
     rag_id = ""
-    for feat in gpt_data[0]['features']:
+    for feat in agent_environment['features']:
         if feat['type_value'] == 3:
             rag_id = feat['config']['lyzr_rag']['rag_id']
 
@@ -222,15 +232,18 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
 
     # Create tools based on the configuration
     config_tools = [create_tool(config) for config in tools if config['name'] in tools_list]
-
     # Create team agent
+    print(f"name: {name}")
+    print(f"additional_instructions: {additional_instructions}")
+    print(f"prompt: {prompt}")
+    print(f"knowledge_base: {knowledge_base}")
     agent_team = Agent(
         name=f"{name}",
         tools=config_tools,
         model=OpenAIChat(id=llm_config['model']),
         knowledge=knowledge_base,
         system_prompt=prompt,
-        instructions=additional_instructions,
+        instructions=[additional_instructions],
         show_tool_calls=True,
         debug_mode=True,
         structured_outputs=True,
@@ -246,19 +259,36 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         response_text = agent_response.content
         response_text_as_string = response_text
 
+    # Define regex patterns to exclude
+    exclude_patterns = [
+        r'^Running:',  # Lines starting with 'Running:'
+        r'^- \w+\(',  # Lines starting with '- ' followed by a word and '(' (e.g., '- generate_text(')
+    ]
+    # Split the text into individual lines
+    lines = response_text_as_string.split('\n')
+    # Compile the regex patterns for efficiency
+    compiled_patterns = [re.compile(pattern) for pattern in exclude_patterns]
+
+    # Filter out lines matching any of the compiled patterns
+    filtered_lines = [line for line in lines if
+                      not any(pattern.match(line.strip()) for pattern in compiled_patterns)]
+
+    # Join the filtered lines back into a single string
+    main_content = '\n'.join(filtered_lines).strip()
+
     data = {
         "session_id": request.session_id,
         "agent_id": request.agent_id,
         "response_id": response_id,
         "user_id": request.user_id,
         "message": request.message,
-        "response": response_text_as_string
+        "response": main_content
     }
 
     save_ai_request(request_data=data)
 
     return {
-        "text": response_text_as_string
+        "text": main_content
     }
 
 
