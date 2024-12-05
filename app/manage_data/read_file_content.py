@@ -51,6 +51,7 @@ def read_file_from_url(url):
             except:
                 return "Unsupported file type"
 
+
 def read_pdf(content):
     # Use BytesIO to load the content as a file-like object
     pdf_content = BytesIO(content)
@@ -78,17 +79,6 @@ def read_json(content):
 
 # Example usage
 def file_data(url, rag_manage_id):
-    file_content = read_file_from_url(url)
-
-    generate_logs = {
-        "rag_id": rag_manage_id,
-        "created_at": datetime.now(),
-        "link": url,
-        "page_content": "",
-        "status": "INPROGRESS"
-    }
-    save_website_scrapper_logs(data=generate_logs)
-
     # Make a GET request to the URL
     response = requests.get(url)
 
@@ -110,8 +100,17 @@ def file_data(url, rag_manage_id):
     except:
         page_content = pymupdf4llm.to_markdown(local_filename)
 
+    generate_logs = {
+        "rag_id": rag_manage_id,
+        "created_at": datetime.now(),
+        "link": url,
+        "page_content": "",
+        "status": "INPROGRESS"
+    }
+    save_website_scrapper_logs(data=generate_logs)
+
     text_splitter = CharacterTextSplitter(separator="\n\n", chunk_size=5000, chunk_overlap=0, length_function=len)
-    docs = [Document(page_content=file_content)]
+    docs = [Document(page_content=page_content)]
     text_chunks = text_splitter.split_documents(docs)
 
     QdrantVectorStore.from_documents(
@@ -132,4 +131,4 @@ def file_data(url, rag_manage_id):
     }
     update_website_scrapper_logs(data=update_logs)
     os.remove(local_filename)
-    return file_content, page_content
+    return page_content, page_content
