@@ -14,11 +14,9 @@ from langchain.schema import Document
 from datetime import datetime
 from app.api.v1.endpoints.chat.db_helper import save_website_scrapper_logs, update_website_scrapper_logs
 
-
 qdrant_api_url = settings.QDRANT_API_URL
 qdrant_api_key = settings.QDRANT_API_KEY
 llama_cloud_api_key = settings.LLAMA_CLOUD_API_KEY
-
 
 parser = LlamaParse(
     api_key=llama_cloud_api_key,  # can also be set in your env as LLAMA_CLOUD_API_KEY
@@ -39,7 +37,7 @@ def read_file_from_url(url):
 
     # Get the content type from the headers
     content_type = response.headers.get('Content-Type')
-
+    print("content_type", content_type)
     # Handle PDF files
     if 'pdf' in content_type:
         return read_pdf(response.content)
@@ -85,7 +83,6 @@ def read_json(content):
 def file_data(url, rag_manage_id):
     file_content = read_file_from_url(url)
 
-    
     generate_logs = {
         "rag_id": rag_manage_id,
         "created_at": datetime.now(),
@@ -99,7 +96,7 @@ def file_data(url, rag_manage_id):
     response = requests.get(url)
 
     # Local path where you want to save the file (including the file name)
-    local_filename = join(dirname(__file__)) + "/" + str(rag_manage_id)+".pdf"
+    local_filename = join(dirname(__file__)) + "/" + str(rag_manage_id) + ".pdf"
 
     # Open the local file in write-binary mode and save the content
     with open(local_filename, 'wb') as file:
@@ -119,7 +116,6 @@ def file_data(url, rag_manage_id):
     text_splitter = CharacterTextSplitter(separator="\n\n", chunk_size=5000, chunk_overlap=0, length_function=len)
     docs = [Document(page_content=file_content)]
     text_chunks = text_splitter.split_documents(docs)
-    
 
     QdrantVectorStore.from_documents(
         text_chunks,
