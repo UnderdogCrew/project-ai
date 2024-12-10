@@ -25,6 +25,14 @@ async def create_agent(
         agent_id = document['agent_id'] if "agent_id" in document else None
         if agent_id is None:
             result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].insert_one(document)
+            return AgentResponse(
+                id=str(result.inserted_id),
+                name=document["name"],
+                environment=document["environment"],
+                instructions=document["instructions"],
+                system_prompt=document["system_prompt"],
+                description=document["description"]
+            )
         else:
             # Build update document based on provided fields
             update_doc = document
@@ -40,15 +48,15 @@ async def create_agent(
 
             if not result:
                 raise HTTPException(status_code=404, detail="Agent not found")
+            return AgentResponse(
+                id=str(result["_id"]),
+                name=result["name"],
+                environment=result["environment"],
+                instructions=result["instructions"],
+                system_prompt=result["system_prompt"],
+                description=result["description"]
+            )
 
-        return AgentResponse(
-            id=str(result.inserted_id),
-            name=document["name"],
-            environment=document["environment"],
-            instructions=document["instructions"],
-            system_prompt=document["system_prompt"],
-            description=document["description"]
-        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
