@@ -42,6 +42,7 @@ class AgentConfig(BaseModel):
     instructions: Optional[str] = None
     system_prompt: str
     description: Optional[str] = None
+    agent_id: Optional[str] = None
 
 
 class AgentResponse(BaseModel):

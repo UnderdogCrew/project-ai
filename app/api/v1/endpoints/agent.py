@@ -22,7 +22,24 @@ async def create_agent(
     try:
         # Create a single document for the agent
         document = config.model_dump()
-        result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].insert_one(document)
+        agent_id = document['agent_id'] if "agent_id" in document else None
+        if agent_id is None:
+            result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].insert_one(document)
+        else:
+            # Build update document based on provided fields
+            update_doc = document
+
+            if not update_doc:
+                raise HTTPException(status_code=400, detail="No update data provided")
+
+            result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].find_one_and_update(
+                {"_id": ObjectId(agent_id)},
+                {"$set": update_doc},
+                return_document=True
+            )
+
+            if not result:
+                raise HTTPException(status_code=404, detail="Agent not found")
 
         return AgentResponse(
             id=str(result.inserted_id),
