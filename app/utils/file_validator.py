@@ -7,7 +7,8 @@ ALLOWED_IMAGE_TYPES = {
     'image/jpeg': '.jpg',
     'image/png': '.png',
     'image/gif': '.gif',
-    'image/webp': '.webp'
+    'image/webp': '.webp',
+    'image/svg': '.svg'
 }
 
 ALLOWED_DOCUMENT_TYPES = {
