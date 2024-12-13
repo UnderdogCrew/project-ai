@@ -66,7 +66,7 @@ async def list_agent_apps(
                         {
                             "$match": {
                                 "$expr": {
-                                    "$eq": ["$_id", {"$toObjectId": "$$createdById"}]
+                                    "$eq": ["$email", "$$createdById"]
                                 }
                             }
                         }
