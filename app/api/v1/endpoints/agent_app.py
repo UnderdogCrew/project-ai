@@ -15,7 +15,7 @@ async def create_agent_app(
 ):
     try:
         # Check if the agentId exists in the database
-        existing_agent = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].find_one({"agentId": ObjectId(app.agentId)})
+        existing_agent = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].find_one({"_id": ObjectId(app.agentId)})
         if not existing_agent:
             raise HTTPException(status_code=404, detail="Agent ID does not exist.")
         # Proceed to insert the new agent app
