@@ -198,6 +198,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         if feat['type_value'] == 3:
             rag_id = feat['config']['rag_id']
 
+    print(f"rag_id {rag_id}")
     # Fetch manage data if rag_id is found
     if rag_id:
         query = {
@@ -206,7 +207,6 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         manage_data = fetch_manage_data(search_query=query, skip=0, limit=1)
         rag_id = str(manage_data[0]['_id'])
 
-    print(f"rag_id {rag_id}")
     embedding_id = f"embedding_{str(rag_id)}"
 
     # Initialize knowledge base if rag_id is available
