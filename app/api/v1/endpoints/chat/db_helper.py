@@ -55,9 +55,7 @@ def fetch_ai_requests_data(query):
 def fetch_manage_data(search_query, skip, limit):
     client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]
-    collection = db[settings.MONGODB_COLLECTION_DATA_MANAGEMENT].find_one(
-        {"_id": ObjectId(search_query)}
-    )
+    collection = db[settings.MONGODB_COLLECTION_DATA_MANAGEMENT].find_one(search_query, skip=skip, limit=limit)
     client.close()
     return collection  # Returning the query result
 

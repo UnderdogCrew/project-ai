@@ -166,130 +166,153 @@ def create_tool(tool_config):
 
 
 def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = None):
-    print("generate rag response called")
-    message = request.message
+    try:
+        message = request.message
 
-    # Fetch agent data using the agent ID from the request
-    gpt_data = fetch_ai_agent_data(agent_id=request.agent_id)
+        # Fetch agent data using the agent ID from the request
+        gpt_data = fetch_ai_agent_data(agent_id=request.agent_id)
 
-    agent_environment = get_environment_data(env_id=gpt_data['environment'])
+        agent_environment = get_environment_data(env_id=gpt_data['environment'])
 
-    agent_tools = agent_environment['tools']
-    tools = []
-    for tool in agent_tools:
-        tools.append(
-            {
-                "name": tool['apiName'],
-                "config": tool['config']
+        agent_tools = agent_environment['tools']
+        tools = []
+        for tool in agent_tools:
+            tools.append(
+                {
+                    "name": tool['apiName'],
+                    "config": tool['config']
+                }
+            )
+        name = gpt_data['name']
+        llm_config = agent_environment['llm_config']
+        prompt = gpt_data['system_prompt']
+        additional_instructions = gpt_data['instructions']
+
+        # Set OpenAI API key from the configuration
+        open_ai_api_key = os.getenv("OPENAI_API_KEY")
+        os.environ["OPENAI_API_KEY"] = open_ai_api_key
+
+        # Initialize variables for RAG (Retrieval-Augmented Generation)
+        rag_id = ""
+        for feat in agent_environment['features']:
+            if feat['type_value'] == 3:
+                rag_id = feat['config']['rag_id']
+
+        print(f"rag_id {rag_id}")
+        # Fetch manage data if rag_id is found
+        if rag_id:
+            query = {
+                "rag_id": rag_id
             }
+            manage_data = fetch_manage_data(search_query=query, skip=0, limit=1)
+            if manage_data is None:
+                data = {
+                    "session_id": request.session_id,
+                    "agent_id": request.agent_id,
+                    "response_id": response_id,
+                    "user_id": request.user_id,
+                    "message": request.message,
+                    "response": ""
+                }
+                save_ai_request(request_data=data)
+            rag_id = str(manage_data[0]['_id'])
+
+        embedding_id = f"embedding_{str(rag_id)}"
+
+        # Initialize knowledge base if rag_id is available
+        knowledge_base = None
+        if rag_id:
+            vector_db = Qdrant(
+                collection=embedding_id,
+                url=qdrant_url,
+                api_key=qdrant_api_key,
+            )
+
+            # Perform a search in the vector database
+            search_data = vector_db.search(query=message, limit=1)
+            urls = [search.name for search in search_data]
+
+            knowledge_base = WebsiteKnowledgeBase(
+                urls=urls,
+                vector_db=vector_db,
+            )
+
+        # Format the system prompt based on the schema or message
+        formatted_template = message
+
+        # Create tools based on the configuration
+        config_tools = [create_tool(config) for config in tools if config['name'] in tools_list]
+        # Create team agent
+        print(f"name: {name}")
+        print(f"additional_instructions: {additional_instructions}")
+        print(f"prompt: {prompt}")
+        print(f"knowledge_base: {knowledge_base}")
+        agent_team = Agent(
+            name=f"{name}",
+            tools=config_tools,
+            model=OpenAIChat(id=llm_config['model']),
+            knowledge=knowledge_base,
+            system_prompt=prompt,
+            instructions=[additional_instructions],
+            show_tool_calls=True,
+            debug_mode=True,
+            structured_outputs=True,
+            markdown=True
         )
-    name = gpt_data['name']
-    llm_config = agent_environment['llm_config']
-    prompt = gpt_data['system_prompt']
-    additional_instructions = gpt_data['instructions']
 
-    # Set OpenAI API key from the configuration
-    open_ai_api_key = os.getenv("OPENAI_API_KEY")
-    os.environ["OPENAI_API_KEY"] = open_ai_api_key
+        # Run the agent team and get the response
+        agent_response = agent_team.run(formatted_template)
+        response_text = agent_response.content.split(")\n\n")[1:]
+        response_text_as_string = "\n\n".join(response_text)
 
-    # Initialize variables for RAG (Retrieval-Augmented Generation)
-    rag_id = ""
-    for feat in agent_environment['features']:
-        if feat['type_value'] == 3:
-            rag_id = feat['config']['rag_id']
+        if response_text_as_string == "":
+            response_text = agent_response.content
+            response_text_as_string = response_text
 
-    print(f"rag_id {rag_id}")
-    # Fetch manage data if rag_id is found
-    if rag_id:
-        query = {
-            "rag_id": rag_id
+        # Define regex patterns to exclude
+        exclude_patterns = [
+            r'^Running:',  # Lines starting with 'Running:'
+            r'^- \w+\(',  # Lines starting with '- ' followed by a word and '(' (e.g., '- generate_text(')
+        ]
+        # Split the text into individual lines
+        lines = response_text_as_string.split('\n')
+        # Compile the regex patterns for efficiency
+        compiled_patterns = [re.compile(pattern) for pattern in exclude_patterns]
+
+        # Filter out lines matching any of the compiled patterns
+        filtered_lines = [line for line in lines if
+                          not any(pattern.match(line.strip()) for pattern in compiled_patterns)]
+
+        # Join the filtered lines back into a single string
+        main_content = '\n'.join(filtered_lines).strip()
+
+        data = {
+            "session_id": request.session_id,
+            "agent_id": request.agent_id,
+            "response_id": response_id,
+            "user_id": request.user_id,
+            "message": request.message,
+            "response": main_content
         }
-        manage_data = fetch_manage_data(search_query=query, skip=0, limit=1)
-        rag_id = str(manage_data[0]['_id'])
 
-    embedding_id = f"embedding_{str(rag_id)}"
+        save_ai_request(request_data=data)
 
-    # Initialize knowledge base if rag_id is available
-    knowledge_base = None
-    if rag_id:
-        vector_db = Qdrant(
-            collection=embedding_id,
-            url=qdrant_url,
-            api_key=qdrant_api_key,
-        )
-
-        # Perform a search in the vector database
-        search_data = vector_db.search(query=message, limit=1)
-        urls = [search.name for search in search_data]
-
-        knowledge_base = WebsiteKnowledgeBase(
-            urls=urls,
-            vector_db=vector_db,
-        )
-
-    # Format the system prompt based on the schema or message
-    formatted_template = message
-
-    # Create tools based on the configuration
-    config_tools = [create_tool(config) for config in tools if config['name'] in tools_list]
-    # Create team agent
-    print(f"name: {name}")
-    print(f"additional_instructions: {additional_instructions}")
-    print(f"prompt: {prompt}")
-    print(f"knowledge_base: {knowledge_base}")
-    agent_team = Agent(
-        name=f"{name}",
-        tools=config_tools,
-        model=OpenAIChat(id=llm_config['model']),
-        knowledge=knowledge_base,
-        system_prompt=prompt,
-        instructions=[additional_instructions],
-        show_tool_calls=True,
-        debug_mode=True,
-        structured_outputs=True,
-        markdown=True
-    )
-
-    # Run the agent team and get the response
-    agent_response = agent_team.run(formatted_template)
-    response_text = agent_response.content.split(")\n\n")[1:]
-    response_text_as_string = "\n\n".join(response_text)
-
-    if response_text_as_string == "":
-        response_text = agent_response.content
-        response_text_as_string = response_text
-
-    # Define regex patterns to exclude
-    exclude_patterns = [
-        r'^Running:',  # Lines starting with 'Running:'
-        r'^- \w+\(',  # Lines starting with '- ' followed by a word and '(' (e.g., '- generate_text(')
-    ]
-    # Split the text into individual lines
-    lines = response_text_as_string.split('\n')
-    # Compile the regex patterns for efficiency
-    compiled_patterns = [re.compile(pattern) for pattern in exclude_patterns]
-
-    # Filter out lines matching any of the compiled patterns
-    filtered_lines = [line for line in lines if
-                      not any(pattern.match(line.strip()) for pattern in compiled_patterns)]
-
-    # Join the filtered lines back into a single string
-    main_content = '\n'.join(filtered_lines).strip()
-
-    data = {
-        "session_id": request.session_id,
-        "agent_id": request.agent_id,
-        "response_id": response_id,
-        "user_id": request.user_id,
-        "message": request.message,
-        "response": main_content
-    }
-
-    save_ai_request(request_data=data)
-
-    return {
-        "text": main_content
-    }
+        return {
+            "text": main_content
+        }
+    except Exception as e:
+        data = {
+            "session_id": request.session_id,
+            "agent_id": request.agent_id,
+            "response_id": response_id,
+            "user_id": request.user_id,
+            "message": request.message,
+            "response": str(e)
+        }
+        save_ai_request(request_data=data)
+        return {
+            "text": str(e)
+        }
 
 
 def get_response_by_id(response_id):
