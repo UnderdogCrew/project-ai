@@ -59,7 +59,7 @@ print(f"project_ai_path: {project_ai_path}")
 
 load_dotenv(dotenv_path=project_ai_path)
 
-qdrant_url = os.getenv("QDRANT_URL")
+qdrant_url = os.getenv("QDRANT_API_URL")
 qdrant_api_key = os.getenv("QDRANT_API_KEY")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -166,7 +166,7 @@ def create_tool(tool_config):
 
 
 def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = None):
-    try:
+    # try:
         message = request.message
 
         # Fetch agent data using the agent ID from the request
@@ -199,29 +199,31 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
                 rag_id = feat['config']['rag_id']
 
         print(f"rag_id {rag_id}")
-        # Fetch manage data if rag_id is found
-        if rag_id:
-            query = {
-                "rag_id": rag_id
-            }
-            manage_data = fetch_manage_data(search_query=query, skip=0, limit=1)
-            if manage_data is None:
-                data = {
-                    "session_id": request.session_id,
-                    "agent_id": request.agent_id,
-                    "response_id": response_id,
-                    "user_id": request.user_id,
-                    "message": request.message,
-                    "response": ""
-                }
-                save_ai_request(request_data=data)
-            rag_id = str(manage_data['_id'])
+        # # Fetch manage data if rag_id is found
+        # if rag_id:
+        #     query = {
+        #         "rag_id": rag_id
+        #     }
+        #     manage_data = fetch_manage_data(search_query=query, skip=0, limit=1)
+        #     if manage_data is None:
+        #         data = {
+        #             "session_id": request.session_id,
+        #             "agent_id": request.agent_id,
+        #             "response_id": response_id,
+        #             "user_id": request.user_id,
+        #             "message": request.message,
+        #             "response": ""
+        #         }
+        #         save_ai_request(request_data=data)
+        #     rag_id = str(manage_data['_id'])
 
         embedding_id = f"{str(rag_id)}"
 
         # Initialize knowledge base if rag_id is available
         knowledge_base = None
         if rag_id:
+            print(f"qdrant_url {qdrant_url}")
+            print(f"qdrant_api_key {qdrant_api_key}")
             vector_db = Qdrant(
                 collection=embedding_id,
                 url=qdrant_url,
@@ -231,7 +233,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             # Perform a search in the vector database
             search_data = vector_db.search(query=message, limit=1)
             urls = [search.name for search in search_data]
-
+            print(urls)
             knowledge_base = WebsiteKnowledgeBase(
                 urls=urls,
                 vector_db=vector_db,
@@ -300,19 +302,19 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         return {
             "text": main_content
         }
-    except Exception as e:
-        data = {
-            "session_id": request.session_id,
-            "agent_id": request.agent_id,
-            "response_id": response_id,
-            "user_id": request.user_id,
-            "message": request.message,
-            "response": str(e)
-        }
-        save_ai_request(request_data=data)
-        return {
-            "text": str(e)
-        }
+    # except Exception as e:
+    #     data = {
+    #         "session_id": request.session_id,
+    #         "agent_id": request.agent_id,
+    #         "response_id": response_id,
+    #         "user_id": request.user_id,
+    #         "message": request.message,
+    #         "response": str(e)
+    #     }
+    #     save_ai_request(request_data=data)
+    #     return {
+    #         "text": str(e)
+    #     }
 
 
 def get_response_by_id(response_id):
