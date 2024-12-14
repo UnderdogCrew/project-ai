@@ -196,7 +196,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
     rag_id = ""
     for feat in agent_environment['features']:
         if feat['type_value'] == 3:
-            rag_id = feat['config']['lyzr_rag']['rag_id']
+            rag_id = feat['config']['rag_id']
 
     # Fetch manage data if rag_id is found
     if rag_id:
