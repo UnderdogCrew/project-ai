@@ -215,7 +215,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
                     "response": ""
                 }
                 save_ai_request(request_data=data)
-            rag_id = str(manage_data[0]['_id'])
+            rag_id = str(manage_data['_id'])
 
         embedding_id = f"embedding_{str(rag_id)}"
 
