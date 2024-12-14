@@ -217,7 +217,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
                 save_ai_request(request_data=data)
             rag_id = str(manage_data['_id'])
 
-        embedding_id = f"embedding_{str(rag_id)}"
+        embedding_id = f"{str(rag_id)}"
 
         # Initialize knowledge base if rag_id is available
         knowledge_base = None
