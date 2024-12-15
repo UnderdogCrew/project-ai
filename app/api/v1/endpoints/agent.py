@@ -22,6 +22,7 @@ async def create_agent(
     try:
         # Create a single document for the agent
         document = config.model_dump()
+        document['user_id'] = '1'
         agent_id = document['agent_id'] if "agent_id" in document else None
         if agent_id is None:
             result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].insert_one(document)
@@ -71,7 +72,7 @@ async def list_agents(
 ):
     try:
         # Build query filters
-        query = {}
+        query = {"user_id": "1"}
         if agent_id:
             query["_id"] = ObjectId(agent_id)
         if search:

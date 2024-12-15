@@ -22,6 +22,7 @@ async def create_environment(
     try:
         # Create a single document containing both environment and agents
         document = config.model_dump()
+        document["user_id"] = "1"
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_STUDIO].insert_one(document)
 
         return EnvironmentResponse(
@@ -45,7 +46,7 @@ async def list_environments(
 ):
     try:
         # Build query filters
-        query = {}
+        query = {"user_id": "1"}
         if environment_id:
             query["_id"] = ObjectId(environment_id)
         if search:
