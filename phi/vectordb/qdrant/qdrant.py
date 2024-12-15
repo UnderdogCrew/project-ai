@@ -15,7 +15,22 @@ from phi.embedder.openai import OpenAIEmbedder
 from phi.vectordb.base import VectorDb
 from phi.vectordb.distance import Distance
 from phi.utils.log import logger
+import os
+from os.path import dirname
+from os.path import isfile, join
+from dotenv import load_dotenv
+from openai import OpenAI
+# Given path
+env_path = join(dirname(__file__), '.env')
 
+# Get the path up to 'project-ai'
+project_ai_path = os.path.abspath(os.path.join(env_path, '../../../../../../.env'))
+print(f"project_ai_path: {project_ai_path}")
+
+load_dotenv(dotenv_path=project_ai_path)
+
+os.environ["OPENAI_API_KEY"] =  os.getenv("OPENAI_API_KEY")
+client = OpenAI()
 
 class Qdrant(VectorDb):
     def __init__(
@@ -190,7 +205,12 @@ class Qdrant(VectorDb):
             limit (int): Number of search results to return
             filters (Optional[Dict[str, Any]]): Filters to apply while searching
         """
-        query_embedding = self.embedder.get_embedding(query)
+        # query_embedding = self.embedder.get_embedding(query)
+        query_embedding = client.embeddings.create(
+            input=[query],
+            model="text-embedding-3-small"
+        )
+        query_embedding = query_embedding.data[0].embedding
         if query_embedding is None:
             logger.error(f"Error getting embedding for Query: {query}")
             return []
@@ -203,6 +223,7 @@ class Qdrant(VectorDb):
             limit=limit,
         )
 
+
         # Build search results
         search_results: List[Document] = []
         for result in results:
@@ -211,11 +232,11 @@ class Qdrant(VectorDb):
             try:
                 search_results.append(
                     Document(
-                        name=result.payload["metadata"]["source"],
-                        metadata=result.payload["metadata"],
-                        content=result.payload["page_content"],
-                        embedder=self.embedder,
-                        embedding=result.vector
+                            name=result.payload["metadata"]["source"] if "source" in result.payload["metadata"] else "",
+                            metadata=result.payload["metadata"],
+                            content=result.payload["page_content"],
+                            embedder=self.embedder,
+                            embedding=result.vector
                     )
                 )
             except Exception as e:

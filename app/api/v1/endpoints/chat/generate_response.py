@@ -8,6 +8,7 @@ from app.api.v1.endpoints.chat.db_helper import get_agent_data as fetch_ai_agent
 from bson import ObjectId  # Importing ObjectId to handle MongoDB document IDs
 from app.schemas.agent_chat_schema.chat_schema import GenerateAgentChatSchema
 import requests
+from langchain_openai import OpenAIEmbeddings
 
 from phi.agent import Agent
 from phi.tools.email import EmailTools
@@ -21,6 +22,7 @@ from phi.tools.wikipedia import WikipediaTools
 from phi.tools.yfinance import YFinanceTools
 from phi.model.openai import OpenAIChat
 from phi.tools.perplexity_tool import PerplexityTools
+from langchain_qdrant import QdrantVectorStore
 from phi.vectordb.qdrant import Qdrant
 from phi.tools.apify import ApifyTools
 from phi.tools.duckduckgo import DuckDuckGo
@@ -198,32 +200,12 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             if feat['type_value'] == 3:
                 rag_id = feat['config']['rag_id']
 
-        print(f"rag_id {rag_id}")
-        # # Fetch manage data if rag_id is found
-        # if rag_id:
-        #     query = {
-        #         "rag_id": rag_id
-        #     }
-        #     manage_data = fetch_manage_data(search_query=query, skip=0, limit=1)
-        #     if manage_data is None:
-        #         data = {
-        #             "session_id": request.session_id,
-        #             "agent_id": request.agent_id,
-        #             "response_id": response_id,
-        #             "user_id": request.user_id,
-        #             "message": request.message,
-        #             "response": ""
-        #         }
-        #         save_ai_request(request_data=data)
-        #     rag_id = str(manage_data['_id'])
-
         embedding_id = f"{str(rag_id)}"
+        print(f"embedding id {embedding_id}")
 
         # Initialize knowledge base if rag_id is available
         knowledge_base = None
         if rag_id:
-            print(f"qdrant_url {qdrant_url}")
-            print(f"qdrant_api_key {qdrant_api_key}")
             vector_db = Qdrant(
                 collection=embedding_id,
                 url=qdrant_url,
@@ -245,10 +227,6 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         # Create tools based on the configuration
         config_tools = [create_tool(config) for config in tools if config['name'] in tools_list]
         # Create team agent
-        print(f"name: {name}")
-        print(f"additional_instructions: {additional_instructions}")
-        print(f"prompt: {prompt}")
-        print(f"knowledge_base: {knowledge_base}")
         agent_team = Agent(
             name=f"{name}",
             tools=config_tools,
