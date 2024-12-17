@@ -9,7 +9,7 @@ from bson import ObjectId  # Importing ObjectId to handle MongoDB document IDs
 from app.schemas.agent_chat_schema.chat_schema import GenerateAgentChatSchema
 import requests
 from langchain_openai import OpenAIEmbeddings
-
+from phi.storage.agent.sqlite import SqlAgentStorage
 from phi.agent import Agent
 from phi.tools.email import EmailTools
 from phi.tools.googlesearch import GoogleSearch
@@ -233,6 +233,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             model=OpenAIChat(id=llm_config['model']),
             knowledge=knowledge_base,
             system_prompt=prompt,
+            storage=SqlAgentStorage(table_name="web_agent", db_file="agents.db"),
             add_history_to_messages=True,
             instructions=[additional_instructions],
             show_tool_calls=True,
