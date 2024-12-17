@@ -95,5 +95,4 @@ def get_agent_history_data(query, skip, limit):
     client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]
     agent_data = db[settings.MONGODB_COLLECTION_AGENT_CHAT].find(query).skip(skip).limit(limit).sort("_id", -1)
-    client.close()
     return agent_data
