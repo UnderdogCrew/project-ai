@@ -168,7 +168,7 @@ def create_tool(tool_config):
 
 
 def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = None):
-    # try:
+    try:
         message = request.message
 
         # Fetch agent data using the agent ID from the request
@@ -233,6 +233,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             model=OpenAIChat(id=llm_config['model']),
             knowledge=knowledge_base,
             system_prompt=prompt,
+            add_history_to_messages=True,
             instructions=[additional_instructions],
             show_tool_calls=True,
             debug_mode=True,
@@ -280,19 +281,19 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         return {
             "text": main_content
         }
-    # except Exception as e:
-    #     data = {
-    #         "session_id": request.session_id,
-    #         "agent_id": request.agent_id,
-    #         "response_id": response_id,
-    #         "user_id": request.user_id,
-    #         "message": request.message,
-    #         "response": str(e)
-    #     }
-    #     save_ai_request(request_data=data)
-    #     return {
-    #         "text": str(e)
-    #     }
+    except Exception as e:
+        data = {
+            "session_id": request.session_id,
+            "agent_id": request.agent_id,
+            "response_id": response_id,
+            "user_id": request.user_id,
+            "message": request.message,
+            "response": str(e)
+        }
+        save_ai_request(request_data=data)
+        return {
+            "text": str(e)
+        }
 
 
 def get_response_by_id(response_id):
