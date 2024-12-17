@@ -9,7 +9,6 @@ from bson import ObjectId  # Importing ObjectId to handle MongoDB document IDs
 from app.schemas.agent_chat_schema.chat_schema import GenerateAgentChatSchema
 import requests
 from langchain_openai import OpenAIEmbeddings
-from phi.storage.agent.sqlite import SqlAgentStorage
 from phi.agent import Agent
 from phi.tools.email import EmailTools
 from phi.tools.googlesearch import GoogleSearch
@@ -215,7 +214,6 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             # Perform a search in the vector database
             search_data = vector_db.search(query=message, limit=1)
             urls = [search.name for search in search_data]
-            print(urls)
             knowledge_base = WebsiteKnowledgeBase(
                 urls=urls,
                 vector_db=vector_db,
@@ -230,14 +228,13 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         agent_team = Agent(
             name=f"{name}",
             tools=config_tools,
+            add_messages=[], # One of system, user, assistant, or tool.
             model=OpenAIChat(id=llm_config['model']),
             knowledge=knowledge_base,
             system_prompt=prompt,
-            storage=SqlAgentStorage(table_name="web_agent", db_file="agents.db"),
-            add_history_to_messages=True,
             instructions=[additional_instructions],
-            show_tool_calls=True,
-            debug_mode=True,
+            show_tool_calls=False,
+            debug_mode=False,
             structured_outputs=True,
             markdown=True
         )
