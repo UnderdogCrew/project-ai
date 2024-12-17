@@ -37,7 +37,7 @@ async def create_agent(
         else:
             # Build update document based on provided fields
             update_doc = document
-            if ['agent_id'] in update_doc:
+            if 'agent_id' in update_doc:
                 del update_doc["agent_id"]
 
             if not update_doc:
