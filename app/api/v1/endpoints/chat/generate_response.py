@@ -215,10 +215,17 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
                     "created_at": history['created_at']
                 }
             )
-        sorted_dicts = []
+        sorted_data = []
         if len(history_details_list) > 0:
             # Sort dictionaries by 'age'
             sorted_dicts = sorted(history_details_list, key=lambda x: x['created_at'])
+            for sorted_dict in sorted_dicts:
+                sorted_data.append(
+                    {
+                        "role": sorted_dict['role'],
+                        "content": sorted_dict['content']
+                    }
+                )
             print("Sorted dictionaries by age:", sorted_dicts)
 
         # Set OpenAI API key from the configuration
@@ -260,7 +267,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         agent_team = Agent(
             name=f"{name}",
             tools=config_tools,
-            add_messages=sorted_dicts, # One of system, user, assistant, or tool.
+            add_messages=sorted_data, # One of system, user, assistant, or tool.
             model=OpenAIChat(id=llm_config['model']),
             knowledge=knowledge_base,
             system_prompt=prompt,
