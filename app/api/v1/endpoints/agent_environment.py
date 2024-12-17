@@ -84,7 +84,7 @@ async def update_environment(
         payload: EnvironmentUpdatePayload,
         db: AsyncIOMotorClient = Depends(get_database)
 ):
-    try:
+    # try:
         # Build update document based on provided fields
         update_doc = {}
         if payload.model_dump():
@@ -109,8 +109,8 @@ async def update_environment(
             tools=result["tools"],
             llm_config=result["llm_config"]
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/{environment_id}", status_code=204)
