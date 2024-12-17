@@ -4,7 +4,11 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 import os
 from os.path import dirname
 import re
-from app.api.v1.endpoints.chat.db_helper import get_agent_data as fetch_ai_agent_data, fetch_ai_requests_data, get_environment_data
+
+from sympy import limit
+
+from app.api.v1.endpoints.chat.db_helper import (get_agent_data as fetch_ai_agent_data, fetch_ai_requests_data,
+                                                 get_environment_data, get_agent_history_data)
 from bson import ObjectId  # Importing ObjectId to handle MongoDB document IDs
 from app.schemas.agent_chat_schema.chat_schema import GenerateAgentChatSchema
 import requests
@@ -189,6 +193,34 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         prompt = gpt_data['system_prompt']
         additional_instructions = gpt_data['instructions']
 
+        # need to fetch the history from database
+        history_query = {
+            "user_id": request.user_id,
+            "agent_id": request.agent_id
+        }
+        history_details = get_agent_history_data(query=history_query, skip=0, limit=5)
+        history_details_list = []
+        for history in history_details:
+            history_details_list.append(
+                {
+                    "role": "user",
+                    "content": history['message'],
+                    "created_at": history['created_at']
+                }
+            )
+            history_details_list.append(
+                {
+                    "role": "assistant",
+                    "content": history['message'],
+                    "created_at": history['created_at']
+                }
+            )
+        sorted_dicts = []
+        if len(history_details_list) > 0:
+            # Sort dictionaries by 'age'
+            sorted_dicts = sorted(history_details_list, key=lambda x: x['created_at'])
+            print("Sorted dictionaries by age:", sorted_dicts)
+
         # Set OpenAI API key from the configuration
         open_ai_api_key = os.getenv("OPENAI_API_KEY")
         os.environ["OPENAI_API_KEY"] = open_ai_api_key
@@ -228,7 +260,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         agent_team = Agent(
             name=f"{name}",
             tools=config_tools,
-            add_messages=[], # One of system, user, assistant, or tool.
+            add_messages=sorted_dicts, # One of system, user, assistant, or tool.
             model=OpenAIChat(id=llm_config['model']),
             knowledge=knowledge_base,
             system_prompt=prompt,
