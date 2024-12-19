@@ -268,7 +268,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         agent_team = Agent(
             name=f"{name}",
             tools=config_tools,
-            add_messages=sorted_data, # One of system, user, assistant, or tool.
+            # add_messages=sorted_data, # One of system, user, assistant, or tool.
             model=OpenAIChat(id=llm_config['model']),
             knowledge=knowledge_base,
             system_prompt=prompt,
