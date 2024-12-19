@@ -51,6 +51,7 @@ class AgentResponse(BaseModel):
     environment: str
     instructions: Optional[str] = None
     system_prompt: str
+    slug: Optional[str] = None
     description: Optional[str] = None
 
 

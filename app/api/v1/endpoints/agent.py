@@ -24,7 +24,11 @@ async def create_agent(
         document = config.model_dump()
         document['user_id'] = '1'
         agent_id = document['agent_id'] if "agent_id" in document else None
+
         if agent_id is None:
+            agent_name = document["name"]
+            agent_slug=agent_name.lower().replace(" ", "-")
+            document['slug'] = agent_slug
             result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].insert_one(document)
             return AgentResponse(
                 id=str(result.inserted_id),
@@ -39,6 +43,11 @@ async def create_agent(
             update_doc = document
             if 'agent_id' in update_doc:
                 del update_doc["agent_id"]
+
+            if "name" in update_doc:
+                agent_name = update_doc["name"]
+                agent_slug = agent_name.lower().replace(" ", "-")
+                update_doc['slug'] = agent_slug
 
             if not update_doc:
                 raise HTTPException(status_code=400, detail="No update data provided")
@@ -55,6 +64,7 @@ async def create_agent(
                 id=str(result["_id"]),
                 name=result["name"],
                 environment=result["environment"],
+                slug=result['slug'] if "slug" in result else (result["name"]).lower().replace(" ", "-"),
                 instructions=result["instructions"],
                 system_prompt=result["system_prompt"],
                 description=result["description"]
@@ -97,6 +107,7 @@ async def list_agents(
                     id=str(agent["_id"]),
                     name=agent["name"],
                     instructions=agent["instructions"],
+                    slug=agent['slug'] if "slug" in agent else (agent["name"]).lower().replace(" ", "-"),
                     environment=agent["environment"],
                     system_prompt=agent["system_prompt"],
                     description=agent["description"]
@@ -135,6 +146,7 @@ async def update_agent(
             id=str(result["_id"]),
             name=result["name"],
             environment=result["environment"],
+            slug=result['slug'] if "slug" in result else (result["name"]).lower().replace(" ", "-"),
             instructions=result["instructions"],
             system_prompt=result["system_prompt"],
             description=result["description"]
