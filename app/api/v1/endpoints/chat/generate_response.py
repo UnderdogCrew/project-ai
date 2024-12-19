@@ -173,6 +173,7 @@ def create_tool(tool_config):
 def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = None):
     try:
         message = request.message
+        device_id = request.device_id
 
         # Fetch agent data using the agent ID from the request
         gpt_data = fetch_ai_agent_data(agent_id=request.agent_id)
@@ -310,6 +311,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             "response_id": response_id,
             "user_id": request.user_id,
             "message": request.message,
+            "device_id": device_id,
             "response": main_content
         }
 
@@ -323,6 +325,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             "session_id": request.session_id,
             "agent_id": request.agent_id,
             "response_id": response_id,
+            "device_id": request.device_id,
             "user_id": request.user_id,
             "message": request.message,
             "response": str(e)
