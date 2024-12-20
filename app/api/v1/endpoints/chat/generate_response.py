@@ -8,7 +8,8 @@ import re
 from sympy import limit
 
 from app.api.v1.endpoints.chat.db_helper import (get_agent_data as fetch_ai_agent_data, fetch_ai_requests_data,
-                                                 get_environment_data, get_agent_history_data)
+                                                 get_environment_data, get_agent_history_data,
+                                                 get_recent_chat_history_helper,get_chat_history)
 from bson import ObjectId  # Importing ObjectId to handle MongoDB document IDs
 from app.schemas.agent_chat_schema.chat_schema import GenerateAgentChatSchema
 import requests
@@ -347,3 +348,33 @@ def get_response_by_id(response_id):
         return {
             "text": document['response']
         }
+
+def get_user_recent_session_by_user_email(user_id,skip,limit):
+    document = get_recent_chat_history_helper(user_id=user_id,skip=skip,limit=limit)
+    if not document:
+        return {"total": 0, "sessions": []}
+    
+    total = document[0]["total"][0]["count"] if document[0]["total"] else 0
+    sessions = document[0]["sessions"]
+    
+    # Add ellipsis to chat names that were truncated
+    for session in sessions:
+        if len(session["chat_name"]) == 30:
+            session["chat_name"] += "..."
+
+    return {
+        "total": total,
+        "sessions": sessions
+    }
+
+def get_chat_by_session_id(session_id,skip,limit):
+    query = {"session_id": session_id}
+    document,total = get_chat_history(query=query,skip=skip,limit=limit)
+    messages = []
+    for message in document:
+        message["id"] = str(message.pop("_id"))
+        messages.append(message)            
+    return {
+        "total": total,
+        "messages": messages,        
+    }
