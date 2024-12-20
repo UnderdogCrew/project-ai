@@ -96,3 +96,62 @@ def get_agent_history_data(query, skip, limit):
     db = client[settings.MONGODB_DB_NAME]
     agent_data = db[settings.MONGODB_COLLECTION_AGENT_CHAT].find(query).skip(skip).limit(limit).sort("_id", -1)
     return agent_data
+
+
+def get_recent_chat_history_helper(user_id: str, skip: int = 0, limit: int = 10):
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
+    db = client[settings.MONGODB_DB_NAME]
+    
+    pipeline = [
+        {"$match": {"user_id": user_id}},
+        {"$sort": {"created_at": -1}},
+        {
+            "$group": {
+                "_id": "$session_id",
+                "first_response": {
+                    "$first": {
+                        "$cond": [
+                            {"$ne": ["$response", None]},
+                            "$response",
+                            "$message"
+                        ]
+                    }
+                },
+                "last_message_date": {"$first": "$created_at"},
+                "message_count": {"$sum": 1},
+                "agent_id": {"$first": "$agent_id"}
+            }
+        },
+        {"$sort": {"last_message_date": -1}},
+        {
+            "$facet": {
+                "total": [{"$count": "count"}],
+                "sessions": [
+                    {"$skip": skip},
+                    {"$limit": limit},
+                    {
+                        "$project": {
+                            "session_id": "$_id",
+                            "chat_name": {
+                                "$substr": ["$first_response", 0, 30]
+                            },
+                            "last_message_date": 1,
+                            "message_count": 1,
+                            "agent_id": 1
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+    
+    result = list(db[settings.MONGODB_COLLECTION_AGENT_CHAT].aggregate(pipeline))
+    client.close()
+    return result
+
+def get_chat_history(query,skip,limit):
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
+    db = client[settings.MONGODB_DB_NAME]
+    total = db[settings.MONGODB_COLLECTION_AGENT_CHAT].count_documents(query)
+    result = db[settings.MONGODB_COLLECTION_AGENT_CHAT].find(query).skip(skip).limit(limit)
+    return result,total
