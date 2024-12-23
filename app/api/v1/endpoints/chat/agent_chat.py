@@ -72,7 +72,7 @@ async def get_chat_history(
 
 @router.get("/recent-history")
 async def get_recent_chat_history(
-    user_id: str,
+    device_id: str,
     skip: int = 0,
     limit: int = 10
 ):
@@ -80,7 +80,7 @@ async def get_recent_chat_history(
     Fetch recent chat sessions with their first messages as chat names.
     """
     try:
-        response = get_user_recent_session_by_user_email(user_id=user_id, skip=skip, limit=limit)
+        response = get_user_recent_session_by_user_email(device_id=device_id, skip=skip, limit=limit)
         return response
     except Exception as e:
         raise HTTPException(

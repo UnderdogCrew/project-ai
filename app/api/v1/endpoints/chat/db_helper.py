@@ -103,7 +103,7 @@ def get_recent_chat_history_helper(user_id: str, skip: int = 0, limit: int = 10)
     db = client[settings.MONGODB_DB_NAME]
     
     pipeline = [
-        {"$match": {"user_id": user_id}},
+        {"$match": {"device_id": device_id}},
         {"$sort": {"created_at": -1}},
         {
             "$group": {
