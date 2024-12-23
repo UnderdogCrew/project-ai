@@ -109,8 +109,8 @@ def calculate_openai_charges(prompt_tokens, completion_tokens, model="gpt-4"):
     model_pricing = pricing[model]
 
     # Calculate cost
-    prompt_cost = (prompt_tokens / 1000) * model_pricing["prompt"]
-    completion_cost = (completion_tokens / 1000) * model_pricing["completion"]
+    prompt_cost = (prompt_tokens) * model_pricing["prompt"]
+    completion_cost = (completion_tokens) * model_pricing["completion"]
     total_cost = prompt_cost + completion_cost
 
     return {
