@@ -303,10 +303,10 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             structured_outputs=True,
             markdown=True
         )
-        token_usage = llm.token_usage
-        print(f"token usage {token_usage}")
         # Run the agent team and get the response
         agent_response = agent_team.run(formatted_template)
+        token_usage = llm.token_usage
+        print(f"token usage {token_usage}")
         response_text = agent_response.content.split(")\n\n")[1:]
         response_text_as_string = "\n\n".join(response_text)
 
