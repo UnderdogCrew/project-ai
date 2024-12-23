@@ -53,7 +53,7 @@ tools_list = {
     "tavily": TavilyTools,
     # "pdf_tools": PdfTools
 }
-
+import tiktoken
 import os
 
 # Given path
@@ -71,6 +71,10 @@ qdrant_api_key = os.getenv("QDRANT_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
+# Function to count tokens using the tiktoken library
+def count_tokens(text, model="gpt-4"):
+    encoder = tiktoken.encoding_for_model(model)
+    return len(encoder.encode(text))
 
 class ChainStreamHandler(StreamingStdOutCallbackHandler):
     def __init__(self, gen):
@@ -272,25 +276,6 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         # Create tools based on the configuration
         config_tools = [create_tool(config) for config in tools if config['name'] in tools_list]
 
-        class TokenTrackingOpenAIChat(OpenAIChat):
-            _token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
-
-            @property
-            def token_usage(self):
-                return self._token_usage
-
-            async def generate_text(self, *args, **kwargs):
-                response = await super().generate_text(*args, **kwargs)
-                print(f">>> token usage: {response}")
-                if hasattr(response, '_raw_response') and hasattr(response._raw_response, 'usage'):
-                    usage = response._raw_response.usage
-                    self._token_usage["prompt_tokens"] += usage.prompt_tokens
-                    self._token_usage["completion_tokens"] += usage.completion_tokens
-                    self._token_usage["total_tokens"] += usage.total_tokens
-                return response
-
-        llm = TokenTrackingOpenAIChat(id=llm_config['model'])
-
         # Create team agent
         agent_team = Agent(
             name=f"{name}",
@@ -305,16 +290,24 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             structured_outputs=True,
             markdown=True
         )
+
+        prompt_tokens = count_tokens(formatted_template, llm_config['model'])
+        token_usage["prompt_tokens"] = prompt_tokens
+
         # Run the agent team and get the response
         agent_response = agent_team.run(formatted_template)
-        token_usage = llm.token_usage
-        print(f"token usage {token_usage}")
         response_text = agent_response.content.split(")\n\n")[1:]
         response_text_as_string = "\n\n".join(response_text)
 
         if response_text_as_string == "":
             response_text = agent_response.content
             response_text_as_string = response_text
+
+        completion_tokens = count_tokens(response_text, llm_config['model'])
+        token_usage["completion_tokens"] = completion_tokens
+        token_usage["total_tokens"] = prompt_tokens + completion_tokens
+
+        print(f"token usage {token_usage}")
 
         # Define regex patterns to exclude
         exclude_patterns = [
