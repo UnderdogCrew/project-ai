@@ -76,6 +76,50 @@ def count_tokens(text, model="gpt-4"):
     encoder = tiktoken.encoding_for_model(model)
     return len(encoder.encode(text))
 
+
+def calculate_openai_charges(prompt_tokens, completion_tokens, model="gpt-4"):
+    # Define pricing per 1,000 tokens for different models
+    pricing = {
+        "gpt-4": {
+            "prompt": 0.03,  # $0.03 per 1,000 prompt tokens
+            "completion": 0.06,  # $0.06 per 1,000 completion tokens
+        },
+        "gpt-4-32k": {
+            "prompt": 0.06,
+            "completion": 0.12,
+        },
+        "gpt-3.5": {
+            "prompt": 0.0015,
+            "completion": 0.002,
+        },
+        "gpt-4o": {
+            "prompt": 0.0002128,  # Hypothetical pricing for GPT-4o
+            "completion": 0.00085122,
+        },
+        "gpt-4o-mini": {
+            "prompt": 0.00001277,  # Hypothetical pricing for GPT-4o-mini
+            "completion": 0.00005107,
+        },
+    }
+
+    if model not in pricing:
+        raise ValueError(f"Model '{model}' pricing is not defined.")
+
+    # Get pricing for the selected model
+    model_pricing = pricing[model]
+
+    # Calculate cost
+    prompt_cost = (prompt_tokens / 1000) * model_pricing["prompt"]
+    completion_cost = (completion_tokens / 1000) * model_pricing["completion"]
+    total_cost = prompt_cost + completion_cost
+
+    return {
+        "prompt_cost": round(prompt_cost, 4),
+        "completion_cost": round(completion_cost, 4),
+        "total_cost": round(total_cost, 4),
+    }
+
+
 class ChainStreamHandler(StreamingStdOutCallbackHandler):
     def __init__(self, gen):
         super().__init__()
@@ -304,8 +348,12 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             response_text_as_string = response_text
 
         completion_tokens = count_tokens(response_text, llm_config['model'])
-        token_usage["completion_tokens"] = completion_tokens
-        token_usage["total_tokens"] = prompt_tokens + completion_tokens
+        token_usage = calculate_openai_charges(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            model=llm_config['model']
+        )
+        token_usage["cost"] = token_usage["total_cost"] + 1
 
         print(f"token usage {token_usage}")
 
