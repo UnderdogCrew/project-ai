@@ -176,6 +176,12 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         message = request.message
         device_id = request.device_id
 
+        token_usage = {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
+        }
+
         # Fetch agent data using the agent ID from the request
         gpt_data = fetch_ai_agent_data(agent_id=request.agent_id)
 
@@ -265,6 +271,22 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
 
         # Create tools based on the configuration
         config_tools = [create_tool(config) for config in tools if config['name'] in tools_list]
+
+        class TokenTrackingOpenAIChat(OpenAIChat):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+            async def generate_text(self, *args, **kwargs):
+                response = await super().generate_text(*args, **kwargs)
+                if hasattr(response, 'usage'):
+                    self.token_usage["prompt_tokens"] += response.usage.prompt_tokens
+                    self.token_usage["completion_tokens"] += response.usage.completion_tokens
+                    self.token_usage["total_tokens"] += response.usage.total_tokens
+                return response
+
+        llm = TokenTrackingOpenAIChat(id=llm_config['model'])
+
         # Create team agent
         agent_team = Agent(
             name=f"{name}",
@@ -279,7 +301,8 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             structured_outputs=True,
             markdown=True
         )
-
+        token_usage = llm.token_usage
+        print(f"token usage {token_usage}")
         # Run the agent team and get the response
         agent_response = agent_team.run(formatted_template)
         response_text = agent_response.content.split(")\n\n")[1:]
@@ -313,13 +336,15 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             "user_id": request.user_id,
             "message": request.message,
             "device_id": device_id,
-            "response": main_content
+            "response": main_content,
+            "token_usage": token_usage
         }
 
         save_ai_request(request_data=data)
 
         return {
-            "text": main_content
+            "text": main_content,
+            "token_usage": token_usage
         }
     except Exception as e:
         data = {
