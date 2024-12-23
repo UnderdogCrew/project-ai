@@ -281,10 +281,11 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
 
             async def generate_text(self, *args, **kwargs):
                 response = await super().generate_text(*args, **kwargs)
-                if hasattr(response, 'usage'):
-                    self._token_usage["prompt_tokens"] += response.usage.prompt_tokens
-                    self._token_usage["completion_tokens"] += response.usage.completion_tokens
-                    self._token_usage["total_tokens"] += response.usage.total_tokens
+                if hasattr(response, '_raw_response') and hasattr(response._raw_response, 'usage'):
+                    usage = response._raw_response.usage
+                    self._token_usage["prompt_tokens"] += usage.prompt_tokens
+                    self._token_usage["completion_tokens"] += usage.completion_tokens
+                    self._token_usage["total_tokens"] += usage.total_tokens
                 return response
 
         llm = TokenTrackingOpenAIChat(id=llm_config['model'])
