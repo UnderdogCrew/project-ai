@@ -281,6 +281,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
 
             async def generate_text(self, *args, **kwargs):
                 response = await super().generate_text(*args, **kwargs)
+                print(f">>> token usage: {response}")
                 if hasattr(response, '_raw_response') and hasattr(response._raw_response, 'usage'):
                     usage = response._raw_response.usage
                     self._token_usage["prompt_tokens"] += usage.prompt_tokens
