@@ -496,9 +496,9 @@ def get_user_recent_session_by_user_email(device_id,skip,limit):
         "sessions": sessions
     }
 
-def get_chat_by_session_id(session_id,skip,limit):
+def get_chat_by_session_id(session_id):
     query = {"session_id": session_id}
-    document,total = get_chat_history(query=query,skip=skip,limit=limit)
+    document,total = get_chat_history(query=query)
     messages = []
     for message in document:
         message["id"] = str(message.pop("_id"))

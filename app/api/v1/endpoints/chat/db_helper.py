@@ -149,12 +149,11 @@ def get_recent_chat_history_helper(device_id: str, skip: int = 0, limit: int = 1
     client.close()
     return result
 
-def get_chat_history(query,skip,limit):
+def get_chat_history(query):
     client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]
     total = db[settings.MONGODB_COLLECTION_AGENT_CHAT].count_documents(query)
-    result = db[settings.MONGODB_COLLECTION_AGENT_CHAT].find(query).skip(skip).limit(limit)
-    client.close()
+    result = db[settings.MONGODB_COLLECTION_AGENT_CHAT].find(query)
     return result,total
 
 
