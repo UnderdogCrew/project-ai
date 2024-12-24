@@ -36,7 +36,7 @@ async def dashboard_apps(
         return JSONResponse(
             status_code=200,
             content={
-                "used_credit": remaining_credit,
+                "remaining_credit": remaining_credit,
                 "agent_counts": agent_counts,
                 "chat_counts": chat_counts
             }
