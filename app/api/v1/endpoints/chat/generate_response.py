@@ -337,7 +337,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
 
         prompt_tokens = count_tokens(formatted_template, llm_config['model'])
         token_usage["prompt_tokens"] = prompt_tokens
-
+        print(f"token_usage: {token_usage}")
         # Run the agent team and get the response
         agent_response = agent_team.run(formatted_template)
         response_text = agent_response.content.split(")\n\n")[1:]
