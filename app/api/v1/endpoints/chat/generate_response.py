@@ -9,7 +9,7 @@ from sympy import limit
 
 from app.api.v1.endpoints.chat.db_helper import (get_agent_data as fetch_ai_agent_data, fetch_ai_requests_data,
                                                  get_environment_data, get_agent_history_data,
-                                                 get_recent_chat_history_helper,get_chat_history)
+                                                 get_recent_chat_history_helper,get_chat_history, fetch_user_details, update_user_credit)
 from bson import ObjectId  # Importing ObjectId to handle MongoDB document IDs
 from app.schemas.agent_chat_schema.chat_schema import GenerateAgentChatSchema
 import requests
@@ -256,7 +256,7 @@ def create_tool(tool_config):
         raise ValueError(f"Tool '{tool_name}' not found in tools_list")  # Raise an error if tool not found
 
 
-def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = None):
+def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = None, user_id: str = None):
     try:
         message = request.message
         device_id = request.device_id
@@ -282,7 +282,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
 
         # need to fetch the history from database
         history_query = {
-            "user_id": request.user_id,
+            "user_id": user_id,
             "agent_id": request.agent_id
         }
         history_details = get_agent_history_data(query=history_query, skip=0, limit=5)
@@ -406,7 +406,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             "session_id": request.session_id,
             "agent_id": request.agent_id,
             "response_id": response_id,
-            "user_id": request.user_id,
+            "user_id": user_id,
             "message": request.message,
             "device_id": device_id,
             "response": main_content,
@@ -415,6 +415,36 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         }
 
         save_ai_request(request_data=data)
+        
+        # update cost in user table
+
+        # Fetch the user details based on user_id
+        user_details_query = {
+            "email": user_id
+        }
+        user_details = fetch_user_details(query=user_details_query)
+
+        if not user_details:
+            pass
+        else:
+            # Update the credit in the user table after verifying the user details
+            updated_credit = user_details['credit'] - total_cost
+            if updated_credit < 0:
+                print("Insufficient credit for the user.")
+                pass
+            else:
+                # Construct the update query
+                update_user_credit_query = {
+                    "_id": ObjectId(user_details['_id'])
+                }
+                update_user_credit_data = {
+                    "credit": updated_credit
+                }
+
+                # Perform the update
+                update_user_credit(query=update_user_credit_query, update_data=update_user_credit_data)
+
+                print(f"User credit updated successfully. Updated credit: {updated_credit}")
 
         return {
             "text": main_content

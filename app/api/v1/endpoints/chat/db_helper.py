@@ -154,4 +154,20 @@ def get_chat_history(query,skip,limit):
     db = client[settings.MONGODB_DB_NAME]
     total = db[settings.MONGODB_COLLECTION_AGENT_CHAT].count_documents(query)
     result = db[settings.MONGODB_COLLECTION_AGENT_CHAT].find(query).skip(skip).limit(limit)
+    client.close()
     return result,total
+
+
+def fetch_user_details(query):
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
+    db = client[settings.MONGODB_DB_NAME]
+    document = db[settings.MONGODB_COLLECTION_USER].find_one(query)
+    client.close()
+    return document
+
+def update_user_credit(query,update_data):
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
+    db = client[settings.MONGODB_DB_NAME]
+    result = db[settings.MONGODB_COLLECTION_USER].update_one(query,{"$inc":{"credit":update_data}})
+    client.close()
+    return str(result.modified_count)

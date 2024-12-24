@@ -3,20 +3,23 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.agent_chat_schema.chat_schema import GenerateAgentChatSchema
 import threading
 from bson import ObjectId
+from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
+from fastapi import APIRouter, Depends, HTTPException
 
 router = APIRouter()
 
 
 @router.post("/")
-def generate_data(request: GenerateAgentChatSchema):
+def generate_data(request: GenerateAgentChatSchema, user_data: GuestTokenResp = Depends(decode_jwt_token)):
     # Save the document request to the database
     response_id = str(ObjectId())
+    user_id = user_data['email']
     print("Request data saved in database")
 
     # Start a new thread to generate the response
     threading.Thread(
         target=generate_rag_response,
-        args=(request, response_id)
+        args=(request, response_id, user_id)
     ).start()
 
     # Return a response indicating that processing has started
@@ -74,7 +77,8 @@ async def get_chat_history(
 async def get_recent_chat_history(
     device_id: str,
     skip: int = 0,
-    limit: int = 10
+    limit: int = 10,
+    user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     """
     Fetch recent chat sessions with their first messages as chat names.
