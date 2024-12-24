@@ -6,6 +6,8 @@ from app.core.config import settings
 from bson import ObjectId
 from typing import List, Optional
 from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
+from app.api.v1.endpoints.chat.db_helper import fetch_user_details, update_user_credit
+
 
 router = APIRouter()
 
@@ -25,6 +27,35 @@ async def create_agent_app(
         document = app.model_dump()
         document['user_id'] = user_id
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_APP].insert_one(document)
+
+        # Fetch the user details based on user_id
+        user_details_query = {
+            "email": user_id
+        }
+        user_details = fetch_user_details(query=user_details_query)
+
+        if not user_details:
+            print(f"User details not found for user_id: {user_id}. Skipping credit update.")
+        else:
+            # Update the credit in the user table after verifying the user details
+            updated_credit = user_details['credit'] - 1
+            if updated_credit < 0:
+                print("Insufficient credit for the user.")
+                updated_credit = 0
+
+            # Construct the update query
+            update_user_credit_query = {
+                "_id": ObjectId(user_details['_id'])
+            }
+            update_user_credit_data = {
+                "credit": updated_credit
+            }
+
+            # Perform the update
+            update_user_credit(query=update_user_credit_query, update_data=update_user_credit_data)
+
+            print(f"User credit updated successfully. Updated credit: {updated_credit}")
+
         return AgentAppResponse(id=str(result.inserted_id), **document)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
