@@ -168,6 +168,6 @@ def fetch_user_details(query):
 def update_user_credit(query,update_data):
     client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]
-    result = db[settings.MONGODB_COLLECTION_USER].update_one(query,{"$inc":{"credit":update_data}})
+    result = db[settings.MONGODB_COLLECTION_USER].update_one(query,{"$set":{"credit":update_data}})
     client.close()
     return str(result.modified_count)
