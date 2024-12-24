@@ -30,7 +30,7 @@ async def dashboard_apps(
 
         agent_counts = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].count_documents({"user_id": user_id})
 
-        chat_counts = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_CHAT].count_documents({"user_id": user_id})
+        chat_counts = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_CHAT].count_documents({"user_id": user_id})
 
 
         return JSONResponse(
