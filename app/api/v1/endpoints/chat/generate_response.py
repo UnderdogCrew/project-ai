@@ -71,53 +71,90 @@ qdrant_api_key = os.getenv("QDRANT_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
-# Function to count tokens using the tiktoken library
-def count_tokens(text, model="gpt-4"):
-    encoder = tiktoken.encoding_for_model(model)
-    return len(encoder.encode(text))
 
+def calculate_openai_cost(model: str, input_tokens: int, output_tokens: int, use_batch_api: bool = False,
+                          is_cached: bool = False) -> float:
+    """
+    Calculate the cost of OpenAI API usage based on model and token counts.
 
-def calculate_openai_charges(prompt_tokens, completion_tokens, model="gpt-4"):
-    # Define pricing per 1,000 tokens for different models
-    pricing = {
+    Args:
+        model (str): Name of the OpenAI model
+        input_tokens (int): Number of input (prompt) tokens
+        output_tokens (int): Number of output (completion) tokens
+        use_batch_api (bool): Whether to use Batch API pricing
+        is_cached (bool): Whether to use cached input token pricing
+
+    Returns:
+        float: Total cost in USD
+    """
+    # Model pricing per 1M tokens
+    model_pricing = {
         "gpt-4": {
-            "prompt": 0.03,  # $0.03 per 1,000 prompt tokens
-            "completion": 0.06,  # $0.06 per 1,000 completion tokens
+            "input": 0.03,
+            "output": 0.06
         },
         "gpt-4-32k": {
-            "prompt": 0.06,
-            "completion": 0.12,
+            "input": 0.06,
+            "output": 0.12
         },
-        "gpt-3.5": {
-            "prompt": 0.0015,
-            "completion": 0.002,
+        "gpt-3.5-turbo": {
+            "input": 0.0005,
+            "output": 0.0015
+        },
+        "gpt-3.5-turbo-16k": {
+            "input": 0.003,
+            "output": 0.004
         },
         "gpt-4o": {
-            "prompt": 0.0002128,  # Hypothetical pricing for GPT-4o
-            "completion": 0.00085122,
+            "input": {
+                "regular": 2.50,
+                "cached": 1.25,
+                "batch": 1.25
+            },
+            "output": {
+                "regular": 10.00,
+                "batch": 5.00
+            }
         },
         "gpt-4o-mini": {
-            "prompt": 0.00001277,  # Hypothetical pricing for GPT-4o-mini
-            "completion": 0.00005107,
-        },
+            "input": {
+                "regular": 0.150,
+                "cached": 0.075,
+                "batch": 0.075
+            },
+            "output": {
+                "regular": 0.600,
+                "batch": 0.300
+            }
+        }
     }
 
-    if model not in pricing:
-        raise ValueError(f"Model '{model}' pricing is not defined.")
+    if model not in model_pricing:
+        raise ValueError(f"Unknown model: {model}. Available models: {', '.join(model_pricing.keys())}")
 
-    # Get pricing for the selected model
-    model_pricing = pricing[model]
+    # Calculate costs based on model type and API usage
+    if model in ["gpt-4o", "gpt-4o-mini"]:
+        # Handle special pricing for GPT-4o models
+        if is_cached:
+            input_cost = (input_tokens / 1000) * model_pricing[model]["input"]["cached"]
+        elif use_batch_api:
+            input_cost = (input_tokens / 1000) * model_pricing[model]["input"]["batch"]
+        else:
+            input_cost = (input_tokens / 1000) * model_pricing[model]["input"]["regular"]
 
-    # Calculate cost
-    prompt_cost = (prompt_tokens) * model_pricing["prompt"]
-    completion_cost = (completion_tokens) * model_pricing["completion"]
-    total_cost = prompt_cost + completion_cost
+        if use_batch_api:
+            output_cost = (output_tokens / 1000) * model_pricing[model]["output"]["batch"]
+        else:
+            output_cost = (output_tokens / 1000) * model_pricing[model]["output"]["regular"]
+    else:
+        # Standard pricing for other models
+        input_cost = (input_tokens / 1000) * model_pricing[model]["input"]
+        output_cost = (output_tokens / 1000) * model_pricing[model]["output"]
 
-    return {
-        "prompt_cost": round(prompt_cost, 6),
-        "completion_cost": round(completion_cost, 6),
-        "total_cost": round(total_cost, 6),
-    }
+    # Calculate total cost
+    total_cost = input_cost + output_cost
+
+    return round(total_cost, 8) #+ 0.0025
 
 
 class ChainStreamHandler(StreamingStdOutCallbackHandler):
@@ -224,12 +261,6 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         message = request.message
         device_id = request.device_id
 
-        token_usage = {
-            "prompt_tokens": 0,
-            "completion_tokens": 0,
-            "total_tokens": 0
-        }
-
         # Fetch agent data using the agent ID from the request
         gpt_data = fetch_ai_agent_data(agent_id=request.agent_id)
 
@@ -330,32 +361,29 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             system_prompt=prompt,
             instructions=[additional_instructions],
             show_tool_calls=False,
-            debug_mode=True,
+            debug_mode=False,
             structured_outputs=True,
             markdown=True
         )
 
-        prompt_tokens = count_tokens(formatted_template, llm_config['model'])
-        token_usage["prompt_tokens"] = prompt_tokens
-        print(f"token_usage: {token_usage}")
         # Run the agent team and get the response
         agent_response = agent_team.run(formatted_template)
+        metrics = agent_response.messages[-1].metrics
+
+        token_uses = {
+            "input_tokens": metrics['input_tokens'],
+            "output_tokens": metrics['output_tokens'],
+            "total_tokens": metrics['total_tokens']
+        }
+
+        total_cost = calculate_openai_cost(model=llm_config['model'], input_tokens=metrics['input_tokens'], output_tokens=metrics['output_tokens'], is_cached=False)
+        print(f"total cost: {total_cost}")
         response_text = agent_response.content.split(")\n\n")[1:]
         response_text_as_string = "\n\n".join(response_text)
 
         if response_text_as_string == "":
             response_text = agent_response.content
             response_text_as_string = response_text
-
-        completion_tokens = count_tokens(response_text, llm_config['model'])
-        token_usage = calculate_openai_charges(
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            model=llm_config['model']
-        )
-        token_usage["cost"] = token_usage["total_cost"] + 1
-
-        print(f"token usage {token_usage}")
 
         # Define regex patterns to exclude
         exclude_patterns = [
@@ -382,14 +410,14 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             "message": request.message,
             "device_id": device_id,
             "response": main_content,
-            "token_usage": token_usage
+            "token_uses": token_uses,
+            "cost": total_cost
         }
 
         save_ai_request(request_data=data)
 
         return {
-            "text": main_content,
-            "token_usage": token_usage
+            "text": main_content
         }
     except Exception as e:
         data = {
