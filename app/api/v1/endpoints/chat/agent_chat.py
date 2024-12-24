@@ -31,7 +31,7 @@ async def generate_data(
 
     remaining_credit = 0
     if used_credit is not None:
-        remaining_credit = round(used_credit['credit']['credit'], 2)
+        remaining_credit = round(used_credit['credit'], 2)
 
     if remaining_credit <= 0:
         return JSONResponse(
