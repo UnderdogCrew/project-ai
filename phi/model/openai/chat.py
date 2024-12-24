@@ -466,6 +466,7 @@ class OpenAIChat(Model):
         # Update time taken to generate response
         assistant_message.metrics["time"] = metrics.response_timer.elapsed
         self.metrics.setdefault("response_times", []).append(metrics.response_timer.elapsed)
+        print(f"response usage ======================================== {response_usage}")
         if response_usage:
             prompt_tokens = response_usage.prompt_tokens
             completion_tokens = response_usage.completion_tokens
