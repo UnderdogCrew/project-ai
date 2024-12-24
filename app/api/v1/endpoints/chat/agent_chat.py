@@ -19,7 +19,7 @@ def generate_data(request: GenerateAgentChatSchema, user_data: GuestTokenResp = 
     # Start a new thread to generate the response
     threading.Thread(
         target=generate_rag_response,
-        args=(request, response_id, user_id)
+        args=(request, response_id)
     ).start()
 
     # Return a response indicating that processing has started

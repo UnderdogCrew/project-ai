@@ -256,13 +256,15 @@ def create_tool(tool_config):
         raise ValueError(f"Tool '{tool_name}' not found in tools_list")  # Raise an error if tool not found
 
 
-def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = None, user_id: str = None):
+def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = None):
     try:
         message = request.message
         device_id = request.device_id
 
         # Fetch agent data using the agent ID from the request
         gpt_data = fetch_ai_agent_data(agent_id=request.agent_id)
+
+        user_id = gpt_data['user_id']
 
         agent_environment = get_environment_data(env_id=gpt_data['environment'])
 
@@ -425,7 +427,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         user_details = fetch_user_details(query=user_details_query)
 
         if not user_details:
-            pass
+            print(f"User details not found for user_id: {user_id}. Skipping credit update.")
         else:
             # Update the credit in the user table after verifying the user details
             updated_credit = user_details['credit'] - total_cost
