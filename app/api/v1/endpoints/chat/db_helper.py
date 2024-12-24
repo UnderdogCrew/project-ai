@@ -98,7 +98,7 @@ def get_agent_history_data(query, skip, limit):
     return agent_data
 
 
-def get_recent_chat_history_helper(user_id: str, skip: int = 0, limit: int = 10):
+def get_recent_chat_history_helper(device_id: str, skip: int = 0, limit: int = 10):
     client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]
     
