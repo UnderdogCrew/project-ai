@@ -10,6 +10,7 @@ from app.schemas.agent_studio import (
 from app.core.config import settings
 from typing import List
 from bson import ObjectId
+from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
 
 router = APIRouter()
 
@@ -17,12 +18,14 @@ router = APIRouter()
 @router.post("/", response_model=EnvironmentResponse)
 async def create_environment(
         config: EnvironmentConfig,
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     try:
+        user_id = user_data['email']
         # Create a single document containing both environment and agents
         document = config.model_dump()
-        document["user_id"] = "1"
+        document["user_id"] = user_id
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_STUDIO].insert_one(document)
 
         return EnvironmentResponse(
@@ -42,11 +45,13 @@ async def list_environments(
         skip: int = 0,
         limit: int = 10,
         search: str = None,
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     try:
+        user_id = user_data['email']
         # Build query filters
-        query = {"user_id": "1"}
+        query = {"user_id": user_id}
         if environment_id:
             query["_id"] = ObjectId(environment_id)
         if search:
@@ -82,7 +87,8 @@ async def list_environments(
 @router.patch("/", response_model=EnvironmentResponse)
 async def update_environment(
         payload: EnvironmentUpdatePayload,
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     try:
         # Build update document based on provided fields
@@ -116,7 +122,8 @@ async def update_environment(
 @router.delete("/{environment_id}", status_code=204)
 async def delete_environment(
         environment_id: str,
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     try:
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_STUDIO].delete_one(

@@ -5,21 +5,25 @@ from app.schemas.agent_app import AgentAppCreate, AgentAppUpdate, AgentAppRespon
 from app.core.config import settings
 from bson import ObjectId
 from typing import List, Optional
+from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
 
 router = APIRouter()
 
 @router.post("/", response_model=AgentAppResponse)
 async def create_agent_app(
     app: AgentAppCreate,
-    db: AsyncIOMotorClient = Depends(get_database)
+    db: AsyncIOMotorClient = Depends(get_database),
+    user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     try:
+        user_id = user_data['email']
         # Check if the agentId exists in the database
         existing_agent = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].find_one({"_id": ObjectId(app.agentId)})
         if not existing_agent:
             raise HTTPException(status_code=404, detail="Agent ID does not exist.")
         # Proceed to insert the new agent app
         document = app.model_dump()
+        document['user_id'] = user_id
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_APP].insert_one(document)
         return AgentAppResponse(id=str(result.inserted_id), **document)
     except Exception as e:
@@ -33,11 +37,15 @@ async def list_agent_apps(
     search: Optional[str] = None,
     is_public: Optional[bool] = None,
     app_id: Optional[str] = None,
-    db: AsyncIOMotorClient = Depends(get_database)
+    db: AsyncIOMotorClient = Depends(get_database),
+    user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     try:
         # Build the query filters
-        query = {}
+        user_id = user_data['email']
+        query = {
+            "user_id": user_id
+        }
         if app_id:
             query["_id"] = ObjectId(app_id)
 
@@ -108,7 +116,9 @@ async def list_agent_apps(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.patch("/", response_model=AgentAppResponse)
-async def patch_agent_app(app: AgentAppUpdate, db: AsyncIOMotorClient = Depends(get_database)):
+async def patch_agent_app(app: AgentAppUpdate, db: AsyncIOMotorClient = Depends(get_database),
+                          user_data: GuestTokenResp = Depends(decode_jwt_token)
+                          ):
     try:
         # Ensure app_id is provided in the request body
         if not app.app_id:
@@ -136,7 +146,8 @@ async def patch_agent_app(app: AgentAppUpdate, db: AsyncIOMotorClient = Depends(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{app_id}", status_code=204)
-async def delete_agent_app(app_id: str, db: AsyncIOMotorClient = Depends(get_database)):
+async def delete_agent_app(app_id: str, db: AsyncIOMotorClient = Depends(get_database),
+                           user_data: GuestTokenResp = Depends(decode_jwt_token)):
     try:
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_APP].delete_one({"_id": ObjectId(app_id)})
         if result.deleted_count == 0:

@@ -10,6 +10,7 @@ from app.schemas.agent_studio import (
 from app.core.config import settings
 from typing import List
 from bson import ObjectId
+from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
 
 router = APIRouter()
 
@@ -17,12 +18,14 @@ router = APIRouter()
 @router.post("/", response_model=AgentResponse)
 async def create_agent(
         config: AgentConfig,
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     try:
         # Create a single document for the agent
+        user_id = user_data['email']
         document = config.model_dump()
-        document['user_id'] = '1'
+        document['user_id'] = user_id
         agent_id = document['agent_id'] if "agent_id" in document else None
 
         if agent_id is None:
@@ -80,11 +83,13 @@ async def list_agents(
         skip: int = 0,
         limit: int = 10,
         search: str = None,
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     try:
+        user_id = user_data['email']
         # Build query filters
-        query = {"user_id": "1"}
+        query = {"user_id": user_id}
         if agent_id:
             query["_id"] = ObjectId(agent_id)
         if search:
@@ -122,7 +127,8 @@ async def list_agents(
 @router.patch("/", response_model=AgentResponse)
 async def update_agent(
         payload: AgentUpdatePayload,
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     try:
         # Build update document based on provided fields
@@ -158,7 +164,8 @@ async def update_agent(
 @router.delete("/{agent_id}", status_code=204)
 async def delete_agent(
         agent_id: str,
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     try:
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].delete_one(

@@ -7,6 +7,7 @@ from app.db.mongodb import get_database
 from typing import Optional, List
 from bson import ObjectId
 from pydantic import BaseModel
+from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
 
 router = APIRouter()
 
@@ -33,15 +34,17 @@ class RAGConfigUpdate(BaseModel):
 @router.post("/", response_model=RAGConfigResponse)
 async def create_rag_config(
         rag_config: RAGConfigCreate,
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     """
     Create a new RAG configuration
     """
+    user_id = user_data['email']
     # Check if RAG name already exists for this user
     existing_rag = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_RAG_CONFIGS].find_one({
         "rag_name": rag_config.rag_name,
-        "user_id": "1"
+        "user_id": user_id
     })
     if existing_rag:
         raise HTTPException(
@@ -52,7 +55,7 @@ async def create_rag_config(
     # Prepare the RAG config with additional fields
     rag_dict = rag_config.model_dump()
     rag_dict.update({
-        "user_id": "1",
+        "user_id": user_id,
         "created_at": datetime.now(timezone.utc).isoformat()
     })
 
@@ -72,13 +75,15 @@ async def get_rag_configs(
         search: Optional[str] = None,
         skip: int = 0,
         limit: int = 10,
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     """
     Get RAG configurations with filtering, search, and pagination
     """
     # Build filter query
-    query = {"user_id": "1"}
+    user_id = user_data['email']
+    query = {"user_id": user_id}
 
     if rag_id:
         try:
@@ -112,7 +117,8 @@ async def get_rag_configs(
 @router.patch("/", response_model=RAGConfigResponse)
 async def update_rag_config(
         updates: RAGConfigUpdate,
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     """
     Update a RAG configuration by ID
@@ -176,7 +182,8 @@ async def update_rag_config(
 @router.delete("/{rag_id}", response_model=dict)
 async def delete_rag_config(
         rag_id: str = Path(..., description="The ID of the RAG config to delete"),
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     """
     Delete a RAG configuration by ID

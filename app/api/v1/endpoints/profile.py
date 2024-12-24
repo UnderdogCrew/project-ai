@@ -31,6 +31,7 @@ async def create_profile(
             "email": email,
             "name": payload.get('name'),
             "status": "ACTIVE",
+            "credit": 100,
             "profilePic": payload.get("picture") if "picture" in payload else "",
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()

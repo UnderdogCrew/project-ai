@@ -23,6 +23,7 @@ from uuid import uuid4
 import sys
 from app.core.config import settings
 import os
+from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
 
 os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
 from openai import OpenAI
@@ -103,10 +104,12 @@ router = APIRouter()
 @router.post("/", response_model=ManageDataResponse)
 async def create_data_management(
         data: CreateManageDataSchema,
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     """Create a new data management request"""
     # Validate RAG ID
+    user_id = user_data['email']
     try:
         rag_object_id = ObjectId(data.rag_id)
     except:
@@ -115,7 +118,7 @@ async def create_data_management(
     # Check if RAG exists and belongs to user
     existing_rag = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_RAG_CONFIGS].find_one({
         "_id": rag_object_id,
-        "user_id": "1"
+        "user_id": user_id
     })
 
     if not existing_rag:
@@ -151,7 +154,7 @@ async def create_data_management(
         "status": DataStatus.COMPLETED,
         "created_at": datetime.now(),
         "updated_at": datetime.now(),
-        "user_id": "1"
+        "user_id": user_id
     }
 
     result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].insert_one(new_data)
@@ -172,10 +175,12 @@ async def list_data_management(
         status: Optional[DataStatus] = None,
         skip: int = Query(default=0, ge=0),
         limit: int = Query(default=10, ge=1, le=100),
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
+    user_id = user_data['email']
     """List all data management requests"""
-    query = {"user_id": "1"}
+    query = {"user_id": user_id}
 
     if rag_id:
         try:
@@ -212,9 +217,11 @@ async def list_data_management(
 @router.get("/{data_id}", response_model=ManageDataResponse)
 async def get_data_management(
         data_id: str = Path(..., description="The ID of the data management request"),
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     """Get a specific data management request"""
+    user_id = user_data['email']
     try:
         data_object_id = ObjectId(data_id)
     except:
@@ -222,7 +229,7 @@ async def get_data_management(
 
     data = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].find_one({
         "_id": data_object_id,
-        "user_id": "1"
+        "user_id": user_id
     })
 
     if not data:
@@ -237,9 +244,11 @@ async def get_data_management(
 @router.delete("/{data_id}", response_model=dict)
 async def delete_data_management(
         data_id: str = Path(..., description="The ID of the data management request to delete"),
-        db: AsyncIOMotorClient = Depends(get_database)
+        db: AsyncIOMotorClient = Depends(get_database),
+        user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     """Delete a data management request"""
+    user_id = user_data['email']
     try:
         data_object_id = ObjectId(data_id)
     except:
@@ -248,7 +257,7 @@ async def delete_data_management(
     # Check if data exists and belongs to user
     existing_data = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].find_one({
         "_id": data_object_id,
-        "user_id": "1"
+        "user_id": user_id
     })
 
     if not existing_data:

@@ -4,19 +4,27 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.config import settings
 import jwt
 from typing import Optional, Dict
+from pydantic import BaseModel, Field, field_validator
+from fastapi import HTTPException, Header
 
+class GuestTokenResp(BaseModel):
+    email: str
+    email_verified: bool
 
-def decode_jwt_token(token: str) -> Optional[Dict]:
+def decode_jwt_token(authorization: str = Header(...), ) -> Optional[Dict]:
+    print("decode_jwt_token", authorization)
     try:
         payload = jwt.decode(
-            token, 
-            settings.JWT_SECRET_KEY, 
+            authorization.split("Bearer ")[-1],
+            settings.JWT_SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
             options={"verify_signature":False},
         )
         return payload if payload["exp"] >= time.time() else None
-    except:
-        return None
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token Expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 class JWTBearer(HTTPBearer):
     def __init__(self, auto_error: bool = True):
