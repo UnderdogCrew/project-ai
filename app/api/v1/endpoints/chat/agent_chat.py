@@ -1,3 +1,6 @@
+from motor.motor_asyncio import AsyncIOMotorClient
+from starlette.responses import JSONResponse
+
 from app.api.v1.endpoints.chat.generate_response import generate_rag_response, get_response_by_id, get_user_recent_session_by_user_email, get_chat_by_session_id
 from fastapi import APIRouter, HTTPException
 from app.schemas.agent_chat_schema.chat_schema import GenerateAgentChatSchema
@@ -5,16 +8,36 @@ import threading
 from bson import ObjectId
 from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
 from fastapi import APIRouter, Depends, HTTPException
+from app.db.mongodb import get_database
+from app.core.config import settings
 
 router = APIRouter()
 
 
 @router.post("/")
-def generate_data(request: GenerateAgentChatSchema, user_data: GuestTokenResp = Depends(decode_jwt_token)):
+async def generate_data(
+        request: GenerateAgentChatSchema,
+                        user_data: GuestTokenResp = Depends(decode_jwt_token),
+        db: AsyncIOMotorClient = Depends(get_database)
+):
     # Save the document request to the database
     response_id = str(ObjectId())
     user_id = user_data['email']
     print("Request data saved in database")
+    email_query = {
+        "email": user_id
+    }
+    used_credit = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_USER].find_one(email_query)
+
+    remaining_credit = 0
+    if used_credit is not None:
+        remaining_credit = round(used_credit['credit']['credit'], 2)
+
+    if remaining_credit <= 0:
+        return JSONResponse(
+            status_code=400,
+            content={"message": "Insufficient credit", "status": "error"}
+        )
 
     # Start a new thread to generate the response
     threading.Thread(
