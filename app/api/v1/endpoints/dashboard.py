@@ -26,7 +26,7 @@ async def dashboard_apps(
 
         remaining_credit = 0
         if used_credit is not None:
-            remaining_credit = round(used_credit['credit']['credit'], 2)
+            remaining_credit = used_credit['credit']
 
         agent_counts = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].count_documents({"user_id": user_id})
 

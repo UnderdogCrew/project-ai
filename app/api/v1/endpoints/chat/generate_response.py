@@ -328,7 +328,6 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
                 rag_id = feat['config']['rag_id']
 
         embedding_id = f"{str(rag_id)}"
-        print(f"embedding id {embedding_id}")
 
         # Initialize knowledge base if rag_id is available
         knowledge_base = None
