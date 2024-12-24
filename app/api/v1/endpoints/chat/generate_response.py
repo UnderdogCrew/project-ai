@@ -330,7 +330,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             system_prompt=prompt,
             instructions=[additional_instructions],
             show_tool_calls=False,
-            debug_mode=False,
+            debug_mode=True,
             structured_outputs=True,
             markdown=True
         )
