@@ -124,6 +124,51 @@ async def list_agents(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+@router.get("/details", response_model=PaginatedAgentResponse)
+async def list_agents(
+        agent_id: str,
+        skip: int = 0,
+        limit: int = 1,
+        search: str = None,
+        db: AsyncIOMotorClient = Depends(get_database),
+):
+    try:
+        query = {
+            "_id": ObjectId(agent_id)
+        }
+        if search:
+            query["$or"] = [
+                {"name": {"$regex": search, "$options": "i"}},
+                {"description": {"$regex": search, "$options": "i"}}
+            ]
+
+        # Get total count
+        total = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].count_documents(query)
+
+        # Execute query with pagination
+        agents = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT].find(query).skip(skip).limit(
+            limit).to_list(length=None)
+
+        return PaginatedAgentResponse(
+            total=total,
+            data=[
+                AgentResponse(
+                    id=str(agent["_id"]),
+                    name=agent["name"],
+                    instructions=agent["instructions"],
+                    slug=agent['slug'] if "slug" in agent else (agent["name"]).lower().replace(" ", "-"),
+                    environment=agent["environment"],
+                    system_prompt=agent["system_prompt"],
+                    description=agent["description"]
+                )
+                for agent in agents
+            ]
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.patch("/", response_model=AgentResponse)
 async def update_agent(
         payload: AgentUpdatePayload,

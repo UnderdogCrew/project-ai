@@ -101,7 +101,6 @@ async def get_recent_chat_history(
     device_id: str,
     skip: int = 0,
     limit: int = 10,
-    user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
     """
     Fetch recent chat sessions with their first messages as chat names.
