@@ -10,19 +10,21 @@ from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
 from fastapi import APIRouter, Depends, HTTPException
 from app.db.mongodb import get_database
 from app.core.config import settings
-
+from app.api.v1.endpoints.chat.db_helper import (get_agent_data as fetch_ai_agent_data)
 router = APIRouter()
 
 
 @router.post("/")
 async def generate_data(
         request: GenerateAgentChatSchema,
-                        user_data: GuestTokenResp = Depends(decode_jwt_token),
         db: AsyncIOMotorClient = Depends(get_database)
 ):
     # Save the document request to the database
     response_id = str(ObjectId())
-    user_id = user_data['email']
+    # Fetch agent data using the agent ID from the request
+    gpt_data = fetch_ai_agent_data(agent_id=request.agent_id)
+
+    user_id = gpt_data['user_id']
     print("Request data saved in database")
     email_query = {
         "email": user_id
