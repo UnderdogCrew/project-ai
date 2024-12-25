@@ -73,9 +73,7 @@ async def fetch_generated_response(response_id: str):
 
 @router.get("/history")
 async def get_chat_history(
-    session_id: str,
-    skip: int = 0,
-    limit: int = 10,
+    session_id: str
 ):
     """
     Fetch chat history for a specific session with pagination.
@@ -89,7 +87,7 @@ async def get_chat_history(
         dict: Paginated chat history with total count and messages
     """
     try:
-        response = get_chat_by_session_id(session_id=session_id, skip=skip, limit=limit)
+        response = get_chat_by_session_id(session_id=session_id)
         return response
     except Exception as e:
         raise HTTPException(
