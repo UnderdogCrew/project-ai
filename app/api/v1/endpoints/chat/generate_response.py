@@ -478,8 +478,8 @@ def get_response_by_id(response_id):
             "text": document['response']
         }
 
-def get_user_recent_session_by_user_email(device_id,skip,limit):
-    document = get_recent_chat_history_helper(device_id=device_id,skip=skip,limit=limit)
+def get_user_recent_session_by_user_email(device_id,skip,limit, agent_id):
+    document = get_recent_chat_history_helper(device_id=device_id,skip=skip,limit=limit, agent_id=agent_id)
     if not document:
         return {"total": 0, "sessions": []}
     

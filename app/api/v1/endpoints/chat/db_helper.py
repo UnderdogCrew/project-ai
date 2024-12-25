@@ -98,12 +98,17 @@ def get_agent_history_data(query, skip, limit):
     return agent_data
 
 
-def get_recent_chat_history_helper(device_id: str, skip: int = 0, limit: int = 10):
+def get_recent_chat_history_helper(device_id: str, skip: int = 0, limit: int = 10, agent_id: str = None):
     client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]
-    
+
+    if agent_id is None:
+        match_query = {"device_id": device_id}
+    else:
+        match_query = {"device_id": device_id, "agent_id": agent_id}
+
     pipeline = [
-        {"$match": {"device_id": device_id}},
+        {"$match": match_query},
         {"$sort": {"created_at": -1}},
         {
             "$group": {
