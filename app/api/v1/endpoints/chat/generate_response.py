@@ -73,7 +73,6 @@ qdrant_api_key = os.getenv("QDRANT_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 os.environ['OPENAI_API_TYPE'] = "openai"
-openai.api_type = "openai"
 open_ai_client = OpenAI()
 
 
