@@ -371,21 +371,10 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         # Initialize knowledge base if rag_id is available
         knowledge_base = None
         if rag_id:
-            # search_results = qdrant_client.search(
-            #     collection_name=embedding_id,
-            #     query_vector=user_embedding.data[0].embedding,
-            #     limit=5
-            # )
-            # if search_results:
-            #     for end_point in search_results:
-            #         print(end_point)
-            # urls = [search.name for search in search_data]
-            # knowledge_base = WebsiteKnowledgeBase(
-            #     urls=urls,
-            #     vector_db=vector_db,
-            # )
             knowledge_base = _setup_doc_search(embedding_id=rag_id)
         print(f"knowledge base: {knowledge_base}")
+        for _knowlegde in knowledge_base:
+            print(f"knowledge base: {_knowlegde}")
         # Format the system prompt based on the schema or message
         formatted_template = message
 
