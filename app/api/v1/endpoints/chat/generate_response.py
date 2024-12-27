@@ -37,6 +37,7 @@ from phi.knowledge.website import WebsiteKnowledgeBase
 from phi.knowledge.pdf import PDFUrlKnowledgeBase
 from app.api.v1.endpoints.chat.db_helper import fetch_manage_data, save_ai_request
 from openai import OpenAI
+from qdrant_client import QdrantClient
 
 tools_list = {
     "send_email": EmailTools,
