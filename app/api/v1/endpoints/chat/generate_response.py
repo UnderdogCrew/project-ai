@@ -34,10 +34,8 @@ from phi.tools.firecrawl import FirecrawlTools
 from phi.tools.tavily import TavilyTools
 # from phi.tools.pdf_extractor import PdfTools
 from phi.knowledge.website import WebsiteKnowledgeBase
-from phi.knowledge.pdf import PDFUrlKnowledgeBase
+
 from app.api.v1.endpoints.chat.db_helper import fetch_manage_data, save_ai_request
-from openai import OpenAI
-from qdrant_client import QdrantClient
 
 tools_list = {
     "send_email": EmailTools,
@@ -73,15 +71,6 @@ qdrant_api_key = os.getenv("QDRANT_API_KEY")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-os.environ['OPENAI_API_TYPE'] = "openai"
-open_ai_client = OpenAI()
-
-
-qdrant_client = QdrantClient(
-    url=qdrant_url,
-    api_key=qdrant_api_key,
-    timeout=300
-)
 
 
 def calculate_openai_cost(model: str, input_tokens: int, output_tokens: int, use_batch_api: bool = False,
@@ -268,24 +257,6 @@ def create_tool(tool_config):
         raise ValueError(f"Tool '{tool_name}' not found in tools_list")  # Raise an error if tool not found
 
 
-def _setup_doc_search(embedding_id):
-    """Sets up document search functionality"""
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small", allowed_special=(), disallowed_special=())
-    if not qdrant_client.collection_exists(embedding_id):
-        qdrant_client.create_collection(
-            collection_name=embedding_id,
-            vectors_config=VectorParams(size=1536, distance='Cosine')
-        )
-        print("Collection created in Qdrant.........!!!!!!!!!")
-
-    return QdrantVectorStore.from_existing_collection(
-            embedding=embeddings,
-            collection_name=embedding_id,
-            api_key=qdrant_api_key,
-            url=qdrant_url,
-        )
-
-
 def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = None):
     try:
         message = request.message
@@ -359,22 +330,23 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
 
         embedding_id = f"{str(rag_id)}"
 
-        # generate the response
-        user_embedding = open_ai_client.embeddings.create(
-            input=[message],
-            model="text-embedding-3-small"
-        )
-
-        if not user_embedding:
-            print("Error creating embeddings for context search.")
-
         # Initialize knowledge base if rag_id is available
         knowledge_base = None
         if rag_id:
-            knowledge_base = _setup_doc_search(embedding_id=rag_id)
-        print(f"knowledge base: {knowledge_base}")
-        for _knowlegde in knowledge_base:
-            print(f"knowledge base: {_knowlegde}")
+            vector_db = Qdrant(
+                collection=embedding_id,
+                url=qdrant_url,
+                api_key=qdrant_api_key,
+            )
+
+            # Perform a search in the vector database
+            search_data = vector_db.search(query=message, limit=1)
+            urls = [search.name for search in search_data]
+            knowledge_base = WebsiteKnowledgeBase(
+                urls=urls,
+                vector_db=vector_db,
+            )
+        print(f"urls: {urls}")
         # Format the system prompt based on the schema or message
         formatted_template = message
 
@@ -387,11 +359,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             tools=config_tools,
             # add_messages=sorted_data, # One of system, user, assistant, or tool.
             model=OpenAIChat(id=llm_config['model']),
-            # knowledge=knowledge_base,
-            retriever=knowledge_base.as_retriever(
-                search_type="similarity_score_threshold",
-                search_kwargs={'score_threshold': 0.7, 'k': 5}
-            ),
+            knowledge=knowledge_base,
             system_prompt=prompt,
             instructions=[additional_instructions],
             show_tool_calls=False,

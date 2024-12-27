@@ -110,7 +110,7 @@ def file_data(url, rag_manage_id):
     save_website_scrapper_logs(data=generate_logs)
 
     text_splitter = CharacterTextSplitter(separator="\n\n", chunk_size=5000, chunk_overlap=0, length_function=len)
-    docs = [Document(page_content=page_content)]
+    docs = [Document(page_content=page_content, metadata={"source": url})]
     text_chunks = text_splitter.split_documents(docs)
 
     QdrantVectorStore.from_documents(
