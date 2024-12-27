@@ -34,6 +34,7 @@ from phi.tools.firecrawl import FirecrawlTools
 from phi.tools.tavily import TavilyTools
 # from phi.tools.pdf_extractor import PdfTools
 from phi.knowledge.website import WebsiteKnowledgeBase
+from phi.knowledge.pdf import PDFUrlKnowledgeBase
 from app.api.v1.endpoints.chat.db_helper import fetch_manage_data, save_ai_request
 
 tools_list = {
@@ -340,6 +341,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
 
             # Perform a search in the vector database
             search_data = vector_db.search(query=message, limit=1)
+            print(f"search_data: {search_data}")
             urls = [search.name for search in search_data]
             knowledge_base = WebsiteKnowledgeBase(
                 urls=urls,
