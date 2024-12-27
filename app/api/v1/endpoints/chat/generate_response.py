@@ -345,7 +345,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
                 urls=urls,
                 vector_db=vector_db,
             )
-
+        print(f"urls: {urls}")
         # Format the system prompt based on the schema or message
         formatted_template = message
 
@@ -362,7 +362,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
             system_prompt=prompt,
             instructions=[additional_instructions],
             show_tool_calls=False,
-            debug_mode=False,
+            debug_mode=True,
             structured_outputs=True,
             markdown=True
         )
