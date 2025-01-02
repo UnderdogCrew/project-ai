@@ -332,6 +332,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
 
         # Initialize knowledge base if rag_id is available
         knowledge_base = None
+        urls = []
         if rag_id:
             vector_db = Qdrant(
                 collection=embedding_id,
