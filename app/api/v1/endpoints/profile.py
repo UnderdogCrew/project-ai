@@ -6,6 +6,7 @@ from app.core.auth_middlerware import JWTBearer
 from app.db.mongodb import get_database
 from app.core.config import settings
 from app.schemas.user import UserProfile, UserProfileResponse
+from app.utils.razorpay_utils import create_razorpay_customer
 
 router = APIRouter()
 
@@ -36,6 +37,16 @@ async def create_profile(
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
         }
+        
+        # Create Razorpay customer
+        razorpay_customer, error = create_razorpay_customer(email, payload.get('contact', ''))
+        if error:
+            raise HTTPException(status_code=500, 
+                                detail=f"Failed to create Razorpay customer: {error}")
+
+        # Add Razorpay customer ID to user data
+        user_data["razorpay_customer_id"] = razorpay_customer.get("id")
+
         await db[settings.MONGODB_DB_NAME]["users"].insert_one(user_data)
         return UserProfileResponse(
             email=email,
