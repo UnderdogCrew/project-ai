@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     AWS_S3_BUCKET: str = os.environ.get("AWS_ACCESS_KEY_ID")
     MONGODB_COLLECTION_AGENT_APP: str =os.environ.get("MONGODB_COLLECTION_AGENT_APP")
     MONGODB_COLLECTION_USER : str= os.environ.get("MONGODB_COLLECTION_USER")
+    MONGODB_COLLECTION_SUBSCRIPTIONS : str = os.environ.get("MONGODB_COLLECTION_SUBSCRIPTIONS")
+    MONGODB_COLLECTION_PLANS : str = os. environ.get("MONGODB_COLLECTION_PLANS")
+    RAZORPAY_API_KEY : str = os.environ.get("RAZORPAY_API_KEY")
+    RAZORPAY_API_SECRET : str = os.environ.get("RAZORPAY_API_SECRET")
+
+
+    
     # If you need to construct the full URL with authentication
     @property
     def mongodb_connection_string(self) -> str:
