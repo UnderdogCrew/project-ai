@@ -1,4 +1,5 @@
 import requests
+from requests.auth import HTTPBasicAuth
 from app.core.config import settings
 from datetime import datetime
 
@@ -6,7 +7,6 @@ def create_razorpay_customer(email: str, contact: str):
     url = "https://api.razorpay.com/v1/customers"
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Basic {settings.RAZORPAY_API_KEY}:{settings.RAZORPAY_API_SECRET}"
     }
     
     payload = {
@@ -14,45 +14,58 @@ def create_razorpay_customer(email: str, contact: str):
         "email": email,
         "contact": contact
     }
-    
-    response = requests.post(url, json=payload, headers=headers)
+    response = requests.post(url,
+                             auth=HTTPBasicAuth(settings.RAZORPAY_API_KEY, 
+                                                settings.RAZORPAY_API_SECRET),
+                            json=payload, headers=headers)
     
     if response.status_code != 200:
         return None, response.json()
     
     return response.json(), None 
 
-def create_razorpay_subscription(plan_id: str, customer_id: str, total_count: int, quantity: int = 1, customer_notify: int = 1, start_at: int = None, expire_by: int = None, addons: list = None, gst_percentage: float = 18.0):
+def create_razorpay_subscription(plan_id: str, email: str,total_count: int):
     url = "https://api.razorpay.com/v1/subscriptions"
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Basic {settings.RAZORPAY_API_KEY}:{settings.RAZORPAY_API_SECRET}"
     }
-    
-    # Calculate GST and total amount
-    base_amount = 1000  # Example base amount, replace with your actual logic
-    gst_amount = (base_amount * gst_percentage) / 100
-    total_amount = base_amount + gst_amount
 
-    # Set the expiry time (current time + expiry_duration in seconds)
-    if start_at is None:
-        start_at = int(datetime.utcnow().timestamp())
-    if expire_by is None:
-        expire_by = start_at + 86400  # Default to 1 day later
+    expire_by = int(datetime.utcnow().timestamp()) + 259200
 
-    # Prepare the payload
     payload = {
         "plan_id": plan_id,
         "total_count": total_count,
-        "quantity": quantity,
-        "customer_notify": customer_notify,
-        "start_at": start_at,
+        "quantity": 1,
+        "customer_notify": 1,
         "expire_by": expire_by,
-        "addons": addons or [],
+        "notify_info":{
+            "notify_email": email
+        }
+    }
+    response = requests.post(url,
+                             auth=HTTPBasicAuth(settings.RAZORPAY_API_KEY, 
+                                                settings.RAZORPAY_API_SECRET), 
+                             json=payload, headers=headers)
+    if response.status_code != 200:
+        return None, response.json()
+    
+    return response.json(), None
+
+def cancel_razorpay_subscription(subscription_id: str):
+    url = f"https://api.razorpay.com/v1/subscriptions/{subscription_id}/cancel"
+    headers = {
+        "Content-Type": "application/json",
     }
     
-    response = requests.post(url, json=payload, headers=headers)
+    payload = {
+        "cancel_at_cycle_end": 0  # Immediate cancellation
+    }
     
+    response = requests.post(url,
+                           auth=HTTPBasicAuth(settings.RAZORPAY_API_KEY, 
+                                            settings.RAZORPAY_API_SECRET), 
+                           json=payload, headers=headers)
+                           
     if response.status_code != 200:
         return None, response.json()
     

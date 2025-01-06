@@ -13,4 +13,3 @@ api_router.include_router(file_upload.router, prefix="/upload", tags=['file_uplo
 api_router.include_router(agent_app.router, prefix="/agent/app", tags=["agent-app"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 api_router.include_router(subscription.router, prefix="/subscription", tags=["subscription"])
-api_router.include_router(webhook.router, prefix="/webhook", tags=["webhook"])
