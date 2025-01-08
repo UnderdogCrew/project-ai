@@ -70,3 +70,26 @@ def cancel_razorpay_subscription(subscription_id: str):
         return None, response.json()
     
     return response.json(), None
+
+
+def get_subscription_invoices(subscription_id: str):
+    url = f"https://api.razorpay.com/v1/invoices"    
+    headers = {
+        "Content-Type": "application/json",
+    }
+    
+    params = {
+        "subscription_id": subscription_id
+    }
+    
+    response = requests.get(
+        url,
+        auth=HTTPBasicAuth(settings.RAZORPAY_API_KEY, settings.RAZORPAY_API_SECRET),
+        headers=headers,
+        params=params
+    )
+    
+    if response.status_code != 200:
+        return  None, response.json()
+        
+    return response.json(), None

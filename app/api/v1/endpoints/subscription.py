@@ -4,7 +4,7 @@ from app.schemas.subscription import (
     PlansResponse ,SubscriptionCancelRequest,
     SubscriptionResponse
 )
-from app.utils.razorpay_utils import create_razorpay_subscription,cancel_razorpay_subscription
+from app.utils.razorpay_utils import create_razorpay_subscription,cancel_razorpay_subscription,get_subscription_invoices
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.db.mongodb import get_database
 from app.core.auth_middlerware import JWTBearer
@@ -33,6 +33,15 @@ async def create_subscription(
     if error:
         raise HTTPException(status_code=500, detail=f"Failed to create subscription: {error}")
     
+
+    order_id = ""    
+    invoices, error = get_subscription_invoices(razorpay_response.get("id"))
+    if error:
+        print(f"Error fetching invoices: {error}")
+    else:
+        order_id = invoices["items"][0]["order_id"]
+
+
     # Store subscription data in the database with initial status as "pending"
     subscription_data = {
         "user_email": email,
@@ -44,6 +53,7 @@ async def create_subscription(
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
+    razorpay_response["order_id"] = order_id
     await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_SUBSCRIPTIONS].insert_one(subscription_data)
     return SubscriptionCreateResponse(**razorpay_response) 
 
