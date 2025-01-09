@@ -30,6 +30,8 @@ app.include_router(profile.router, prefix=f"{settings.API_V1_STR}/profile", tags
 app.include_router(file_upload.router,prefix=f"{settings.API_V1_STR}/upload",tags=['file_upload'])
 app.include_router(agent_app.router, prefix=f"{settings.API_V1_STR}/agent/app", tags=["agent-app"])
 app.include_router(dashboard.router, prefix=f"{settings.API_V1_STR}/dashboard", tags=["dashboard"])
+app.include_router(contact_us.router, prefix=f"{settings.API_V1_STR}/contact", tags=["contact"])
+app.include_router(subscription.router, prefix=f"{settings.API_V1_STR}/subscription", tags=["subscription"])
 
 
 @app.on_event("startup")
