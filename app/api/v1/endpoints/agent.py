@@ -1,11 +1,16 @@
+import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient
+from starlette.responses import JSONResponse
+
 from app.db.mongodb import get_database
 from app.schemas.agent_studio import (
     AgentConfig,
     AgentResponse,
     PaginatedAgentResponse,
-    AgentUpdatePayload
+    AgentUpdatePayload,
+    AgentWaitlist
 )
 from app.core.config import settings
 from typing import List
@@ -220,5 +225,45 @@ async def delete_agent(
             raise HTTPException(status_code=404, detail="Agent not found")
 
         return None
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@router.post("/waitlist")
+async def create_agent_waitlist(
+        config: AgentWaitlist,
+        db: AsyncIOMotorClient = Depends(get_database),
+):
+    try:
+        # Create a single document for the agent
+        email = config.email
+
+        result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_WAITLIST].find_one(
+            {
+                "email": email
+            }
+        )
+
+        if not result:
+            await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_WAITLIST].insert_one(
+                {
+                    "email": email,
+                    "created_at": datetime.datetime.now()
+                }
+            )
+            return JSONResponse(
+                status_code=201,
+                content={
+                    "message": "Agent waitlist creation done",
+                }
+            )
+        else:
+            return JSONResponse(
+                status_code=409,
+                content={
+                    "message": "You are already waitlisted",
+                }
+            )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

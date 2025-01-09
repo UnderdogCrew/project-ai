@@ -67,3 +67,13 @@ class AgentUpdatePayload(BaseModel):
     instructions: Optional[str] = None
     system_prompt: Optional[str] = None
     description: Optional[str] = None
+
+
+class AgentWaitlist(BaseModel):
+    email: str
+
+
+class ContactUslist(BaseModel):
+    email: str
+    name: str
+    message: str
