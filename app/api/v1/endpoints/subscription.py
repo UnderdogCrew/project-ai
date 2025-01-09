@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from app.schemas.subscription import (
-    SubscriptionCreateRequest,SubscriptionCreateResponse,  
-    PlansResponse ,SubscriptionCancelRequest,
+    SubscriptionCreateRequest, SubscriptionCreateResponse,
+    PlansResponse, SubscriptionCancelRequest,
     SubscriptionResponse
 )
-from app.utils.razorpay_utils import create_razorpay_subscription,cancel_razorpay_subscription,get_subscription_invoices
+from app.utils.razorpay_utils import create_razorpay_subscription, cancel_razorpay_subscription, \
+    get_subscription_invoices
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.db.mongodb import get_database
 from app.core.auth_middlerware import JWTBearer
@@ -14,11 +15,12 @@ import calendar
 
 router = APIRouter()
 
+
 @router.post("/", dependencies=[Depends(JWTBearer())], response_model=SubscriptionCreateResponse)
 async def create_subscription(
-    request: Request,
-    subscription_request: SubscriptionCreateRequest,
-    db: AsyncIOMotorClient = Depends(get_database),
+        request: Request,
+        subscription_request: SubscriptionCreateRequest,
+        db: AsyncIOMotorClient = Depends(get_database),
 ):
     payload = request.state.jwt_payload
     email = payload.get("email")
@@ -29,18 +31,16 @@ async def create_subscription(
         email=email,
         total_count=total_count,
     )
-    
+
     if error:
         raise HTTPException(status_code=500, detail=f"Failed to create subscription: {error}")
-    
 
-    order_id = ""    
+    order_id = ""
     invoices, error = get_subscription_invoices(razorpay_response.get("id"))
     if error:
         print(f"Error fetching invoices: {error}")
     else:
         order_id = invoices["items"][0]["order_id"]
-
 
     # Store subscription data in the database with initial status as "pending"
     subscription_data = {
@@ -55,15 +55,14 @@ async def create_subscription(
     }
     razorpay_response["order_id"] = order_id
     await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_SUBSCRIPTIONS].insert_one(subscription_data)
-    return SubscriptionCreateResponse(**razorpay_response) 
-
+    return SubscriptionCreateResponse(**razorpay_response)
 
 
 @router.post("/cancel", dependencies=[Depends(JWTBearer())])
 async def cancel_subscription(
-    cancel_request: SubscriptionCancelRequest,
-    request: Request,
-    db: AsyncIOMotorClient = Depends(get_database),
+        cancel_request: SubscriptionCancelRequest,
+        request: Request,
+        db: AsyncIOMotorClient = Depends(get_database),
 ):
     try:
         payload = request.state.jwt_payload
@@ -78,7 +77,7 @@ async def cancel_subscription(
             raise HTTPException(status_code=404, detail="Subscription not found")
 
         razorpay_response, error = cancel_razorpay_subscription(cancel_request.subscription_id)
-        
+
         if error:
             raise HTTPException(status_code=500, detail=f"Failed to cancel subscription: {error}")
 
@@ -101,25 +100,26 @@ async def cancel_subscription(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to cancel subscription: {str(e)}")
 
+
 @router.get("/", dependencies=[Depends(JWTBearer())], response_model=SubscriptionResponse)
 async def get_subscription(
-    request: Request,
-    db: AsyncIOMotorClient = Depends(get_database),
+        request: Request,
+        db: AsyncIOMotorClient = Depends(get_database),
 ):
     email = request.state.jwt_payload.get("email")
     subscription = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_SUBSCRIPTIONS].find_one(
         {"user_email": email}
     )
-    
+
     if not subscription:
         raise HTTPException(
-        status_code=404,
-        detail="Subscription not found"
-    )
+            status_code=404,
+            detail="Subscription not found"
+        )
 
     created_date = subscription["created_at"]
     current_date = datetime.utcnow()
-    
+
     if subscription["status"] == "cancelled":
         last_day = calendar.monthrange(created_date.year, created_date.month)[1]
         access_end_date = created_date.replace(day=last_day, hour=23, minute=59, second=59)
@@ -131,16 +131,16 @@ async def get_subscription(
     else:
         subscription["has_access"] = False
         subscription["access_valid_till"] = None
-        
+
     return SubscriptionResponse(**subscription)
 
 
 @router.get("/plans", response_model=PlansResponse)
 async def get_plans(
-    db: AsyncIOMotorClient = Depends(get_database),
+        db: AsyncIOMotorClient = Depends(get_database),
 ):
     try:
-        plans = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_PLANS].find().to_list(None)        
+        plans = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_PLANS].find().to_list(None)
         if not plans:
             return PlansResponse(plans=[])
         for plan in plans:
@@ -148,20 +148,20 @@ async def get_plans(
         return PlansResponse(plans=plans)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch plans: {str(e)}")
-    
+
 
 @router.post("/webhook")
 async def razorpay_webhook(
-    request: Request,
-    db: AsyncIOMotorClient = Depends(get_database)
+        request: Request,
+        db: AsyncIOMotorClient = Depends(get_database)
 ):
     payload = await request.json()
-    
+
     # Verify the webhook signature (optional but recommended)
     # You can implement signature verification here if needed
     print(payload)
     event = payload.get("event")
-    subscription_id = payload.get("payload", {}).get("subscription", {}).get("entity",{}).get("id")
+    subscription_id = payload.get("payload", {}).get("subscription", {}).get("entity", {}).get("id")
 
     if event == "subscription.activated":
         if subscription_id:
@@ -169,7 +169,7 @@ async def razorpay_webhook(
                 {"subscription_id": subscription_id},
                 {"$set": {"status": "active", "updated_at": datetime.utcnow()}}
             )
-    
+
     elif event == "subscription.deactivated":
         if subscription_id:
             await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_SUBSCRIPTIONS].update_one(
@@ -204,11 +204,11 @@ async def razorpay_webhook(
                 {"subscription_id": subscription_id},
                 {"$set": {"status": "completed", "updated_at": datetime.utcnow()}}
             )
-    
+
     elif event == "subscription.expired":
         if subscription_id:
             await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_SUBSCRIPTIONS].delete_one(
                 {"subscription_id": subscription_id}
             )
-    
+
     return {"status": "success"} 
