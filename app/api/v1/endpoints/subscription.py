@@ -16,47 +16,6 @@ import calendar
 router = APIRouter()
 
 
-@router.post("/", dependencies=[Depends(JWTBearer())], response_model=SubscriptionCreateResponse)
-async def create_subscription(
-        request: Request,
-        subscription_request: SubscriptionCreateRequest,
-        db: AsyncIOMotorClient = Depends(get_database),
-):
-    payload = request.state.jwt_payload
-    email = payload.get("email")
-    total_count = 24
-    # Create subscription in Razorpay
-    razorpay_response, error = create_razorpay_subscription(
-        plan_id=subscription_request.plan_id,
-        email=email,
-        total_count=total_count,
-    )
-
-    if error:
-        raise HTTPException(status_code=500, detail=f"Failed to create subscription: {error}")
-
-    order_id = ""
-    invoices, error = get_subscription_invoices(razorpay_response.get("id"))
-    if error:
-        print(f"Error fetching invoices: {error}")
-    else:
-        order_id = invoices["items"][0]["order_id"]
-
-    # Store subscription data in the database with initial status as "pending"
-    subscription_data = {
-        "user_email": email,
-        "subscription_id": razorpay_response.get("id"),
-        "plan_id": subscription_request.plan_id,
-        "total_count": total_count,
-        "status": razorpay_response.get("status"),
-        "short_url": razorpay_response.get("short_url"),
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
-    }
-    razorpay_response["order_id"] = order_id
-    await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_SUBSCRIPTIONS].insert_one(subscription_data)
-    return SubscriptionCreateResponse(**razorpay_response)
-
 
 @router.post("/cancel", dependencies=[Depends(JWTBearer())])
 async def cancel_subscription(
@@ -101,8 +60,9 @@ async def cancel_subscription(
         raise HTTPException(status_code=500, detail=f"Failed to cancel subscription: {str(e)}")
 
 
-@router.get("/", dependencies=[Depends(JWTBearer())], response_model=SubscriptionResponse)
+@router.get("", dependencies=[Depends(JWTBearer())], response_model=SubscriptionResponse)
 async def get_subscription(
+        plan_id: str,
         request: Request,
         db: AsyncIOMotorClient = Depends(get_database),
 ):
@@ -112,10 +72,43 @@ async def get_subscription(
     )
 
     if not subscription:
-        raise HTTPException(
-            status_code=404,
-            detail="Subscription not found"
+        total_count = 24
+        # Create subscription in Razorpay
+        razorpay_response, error = create_razorpay_subscription(
+            plan_id=plan_id,
+            email=email,
+            total_count=total_count,
         )
+
+        if error:
+            raise HTTPException(status_code=500, detail=f"Failed to create subscription: {error}")
+
+        order_id = ""
+        invoices, error = get_subscription_invoices(razorpay_response.get("id"))
+        if error:
+            print(f"Error fetching invoices: {error}")
+        else:
+            order_id = invoices["items"][0]["order_id"]
+
+        # Store subscription data in the database with initial status as "pending"
+        subscription_data = {
+            "user_email": email,
+            "subscription_id": razorpay_response.get("id"),
+            "plan_id": plan_id,
+            "total_count": total_count,
+            "status": razorpay_response.get("status"),
+            "short_url": razorpay_response.get("short_url"),
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "order_id": order_id
+        }
+        await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_SUBSCRIPTIONS].insert_one(subscription_data)
+        subscription = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_SUBSCRIPTIONS].find_one(
+            {"user_email": email}
+        )
+        if not subscription:
+            raise HTTPException(status_code=404, detail="Subscription not found")
+
 
     created_date = subscription["created_at"]
     current_date = datetime.utcnow()

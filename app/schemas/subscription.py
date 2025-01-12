@@ -28,6 +28,7 @@ class SubscriptionResponse(BaseModel):
     plan_id: str
     status: str
     short_url: str
+    order_id: Optional[str] = ""
     total_count: int
     created_at: datetime
     updated_at: datetime
