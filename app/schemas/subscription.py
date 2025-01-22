@@ -36,3 +36,8 @@ class SubscriptionResponse(BaseModel):
     access_valid_till: Optional[datetime] = None
     has_access: bool
 
+# Define the request body model
+class RazorpayOrderRequest(BaseModel):
+    amount: int
+    currency: str
+    receipt: Optional[str] = ""

@@ -96,3 +96,29 @@ def get_subscription_invoices(subscription_id: str):
         return None, response.json()
 
     return response.json(), None
+
+
+def create_razorpay_order(amount: int, currency: str, receipt: str, notes: dict):
+    url = "https://api.razorpay.com/v1/orders"
+    headers = {
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "amount": amount,
+        "currency": currency,
+        "receipt": receipt,
+        "notes": notes
+    }
+
+    response = requests.post(
+        url,
+        auth=HTTPBasicAuth(settings.RAZORPAY_API_KEY, settings.RAZORPAY_API_SECRET),
+        json=payload,
+        headers=headers
+    )
+
+    if response.status_code != 200:
+        return None, response.json()
+
+    return response.json(), None

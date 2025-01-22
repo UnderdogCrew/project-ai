@@ -1,11 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from app.schemas.subscription import (
-    SubscriptionCreateRequest, SubscriptionCreateResponse,
     PlansResponse, SubscriptionCancelRequest,
-    SubscriptionResponse
+    SubscriptionResponse,RazorpayOrderRequest
 )
 from app.utils.razorpay_utils import create_razorpay_subscription, cancel_razorpay_subscription, \
-    get_subscription_invoices
+    get_subscription_invoices,create_razorpay_order
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.db.mongodb import get_database
 from app.core.auth_middlerware import JWTBearer
@@ -58,6 +57,29 @@ async def cancel_subscription(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to cancel subscription: {str(e)}")
+
+
+@router.post("/create-order", dependencies=[Depends(JWTBearer())])
+async def create_order(
+        order_request: RazorpayOrderRequest,
+        request: Request
+):
+    try:
+        # Extract email from JWT payload
+        payload = request.state.jwt_payload
+        email = payload.get("email")
+
+        order_data, error = create_razorpay_order(amount=order_request.amount, currency=order_request.currency, receipt=order_request.receipt, notes={"user_email": email})
+        if error:
+            raise HTTPException(status_code=500, detail=f"Failed to create order: {error}")
+
+        return {
+            "message": "Order created successfully",
+            "order_id": order_data.get("id"),
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create order: {str(e)}")
 
 
 @router.get("", dependencies=[Depends(JWTBearer())], response_model=SubscriptionResponse)
@@ -126,6 +148,7 @@ async def get_subscription(
         subscription["access_valid_till"] = None
 
     return SubscriptionResponse(**subscription)
+
 
 
 @router.get("/plans", response_model=PlansResponse)
