@@ -228,7 +228,7 @@ async def razorpay_webhook(
                 {"subscription_id": subscription_id}
             )
 
-    elif event == "payment.authorized":
+    elif event == "payment.captured":
         email = payload.get("payload", {}).get("payment", {}).get("entity", {}).get("notes", {}).get("email")
         if email:
             # Assuming the order notes contain the credit amount to be added
