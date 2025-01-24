@@ -229,10 +229,10 @@ async def razorpay_webhook(
             )
 
     elif event == "payment.authorized":
-        email = payload.get("payload", {}).get("order", {}).get("notes", {}).get("email")
+        email = payload.get("payload", {}).get("payment", {}).get("entity", {}).get("notes", {}).get("email")
         if email:
             # Assuming the order notes contain the credit amount to be added
-            credit_to_add = payload.get("payload", {}).get("order", {}).get("notes", {}).get("credit", 0)
+            credit_to_add = payload.get("payload", {}).get("payment", {}).get("entity", {}).get("notes", {}).get("credit", 0)
             await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_USER].update_one(
                 {"email": email},
                 {"$inc": {"credit": credit_to_add}}
