@@ -69,7 +69,8 @@ async def create_order(
         payload = request.state.jwt_payload
         email = payload.get("email")
 
-        order_data, error = create_razorpay_order(amount=order_request.amount, currency=order_request.currency, receipt=order_request.receipt, notes={"user_email": email})
+        order_data, error = create_razorpay_order(amount=order_request.amount, currency=order_request.currency, receipt=order_request.receipt, 
+                                                  notes={"email": email,"credit": order_request.amount/100})
         if error:
             raise HTTPException(status_code=500, detail=f"Failed to create order: {error}")
 
@@ -177,7 +178,7 @@ async def razorpay_webhook(
     # You can implement signature verification here if needed
     print(payload)
     event = payload.get("event")
-    subscription_id = payload.get("payload", {}).get("subscription", {}).get("entity", {}).get("id")
+    subscription_id = payload.get("payload", {}).get("subscription", {}).get("entity", {}).get("id",None)
 
     if event == "subscription.activated":
         if subscription_id:
@@ -225,6 +226,16 @@ async def razorpay_webhook(
         if subscription_id:
             await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_SUBSCRIPTIONS].delete_one(
                 {"subscription_id": subscription_id}
+            )
+
+    elif event == "payment.authorized":
+        email = payload.get("payload", {}).get("order", {}).get("notes", {}).get("email")
+        if email:
+            # Assuming the order notes contain the credit amount to be added
+            credit_to_add = payload.get("payload", {}).get("order", {}).get("notes", {}).get("credit", 0)
+            await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_USER].update_one(
+                {"email": email},
+                {"$inc": {"credit": credit_to_add}}
             )
 
     return {"status": "success"} 
