@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import agent_environment, rag, data_management, agent, profile, file_upload, agent_app, dashboard, subscription, webhook, contact_us
+from app.api.v1.endpoints import agent_environment, rag, data_management, agent, profile, file_upload, agent_app, dashboard, subscription, webhook, contact_us, image_generation
 from app.api.v1.endpoints.chat import agent_chat
 
 api_router = APIRouter()
@@ -14,3 +14,4 @@ api_router.include_router(agent_app.router, prefix="/agent/app", tags=["agent-ap
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 api_router.include_router(subscription.router, prefix="/subscription", tags=["subscription"])
 api_router.include_router(contact_us.router, prefix="/contact", tags=["contact"])
+api_router.include_router(image_generation.router, prefix="/image", tags=["image-generation"])

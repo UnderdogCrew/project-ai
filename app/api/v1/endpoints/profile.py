@@ -37,15 +37,6 @@ async def create_profile(
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
         }
-        
-        # Not Needed Now if Needed Uncomment in Future
-        # razorpay_customer, error = create_razorpay_customer(email, payload.get('contact', ''))
-        # if error:
-        #     raise HTTPException(status_code=500, 
-        #                         detail=f"Failed to create Razorpay customer: {error}")
-
-        # # Add Razorpay customer ID to user data
-        # user_data["razorpay_customer_id"] = razorpay_customer.get("id")
 
         await db[settings.MONGODB_DB_NAME]["users"].insert_one(user_data)
         return UserProfileResponse(
