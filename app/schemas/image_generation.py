@@ -1,7 +1,10 @@
 from pydantic import BaseModel
+from typing import List, Dict, Optional, Union
 
 class ImageGenerationRequest(BaseModel):
-    text: str
+    url: str
+    art: Optional[str] = None
+    feeling: Optional[str] = None
 
 class ImageGenerationResponse(BaseModel):
     url: str
