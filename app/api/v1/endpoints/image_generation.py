@@ -86,36 +86,37 @@ async def generate_image(
                 prompt += f" with Feeling: {request.feeling}"
         
         print(prompt)
-        response = client.images.edit(
-            model="gpt-image-1",
-            prompt=prompt,
-            image=open(filepath, "rb"),
-            size="1024x1024",
-            # quality="medium",
-            n=1,
-        )
-        print(response.usage)
-        image_base64 = response.data[0].b64_json
-        image_bytes = base64.b64decode(image_base64)
+        # response = client.images.edit(
+        #     model="gpt-image-1",
+        #     prompt=prompt,
+        #     image=open(filepath, "rb"),
+        #     size="1024x1024",
+        #     # quality="medium",
+        #     n=1,
+        # )
+        # print(response.usage)
+        # image_base64 = response.data[0].b64_json
+        # image_bytes = base64.b64decode(image_base64)
 
         # Define local folder to save
-        image_path = os.path.join(f"{int(datetime.now().timestamp())}_{image_name}")
+        # image_path = os.path.join(f"{int(datetime.now().timestamp())}_{image_name}")
 
         # Save the image to a file
-        with open(f"{image_path}", "wb") as f:
-            f.write(image_bytes)
+        # with open(f"{image_path}", "wb") as f:
+        #     f.write(image_bytes)
 
-        file_key = f"image_generation/{str(uuid.uuid4())}{file_extension}"
+        # file_key = f"image_generation/{str(uuid.uuid4())}{file_extension}"
 
         # Upload file to S3
-        s3_client.upload_fileobj(
-            open(image_path, "rb"),
-            bucket_name,
-            file_key,
-            ExtraArgs={'ACL': 'public-read','ContentType': 'auto'}
-        )
+        # s3_client.upload_fileobj(
+        #     open(image_path, "rb"),
+        #     bucket_name,
+        #     file_key,
+        #     ExtraArgs={'ACL': 'public-read','ContentType': 'auto'}
+        # )
         # Generate URL
-        file_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{file_key}"
+        # file_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{file_key}"
+        file_url = "https://underdogcrew-ai.s3.ap-south-1.amazonaws.com/image_generation/e27f5f7a-631b-443a-8d86-c3aedd5e7632.jpeg"
 
         # Log the image generation
         log_data = {
@@ -127,7 +128,7 @@ async def generate_image(
         
         await db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
         os.remove(filepath)
-        os.remove(image_path)
+        # os.remove(image_path)
         return ImageGenerationResponse(
             url=file_url,
             message="Image generated successfully"
