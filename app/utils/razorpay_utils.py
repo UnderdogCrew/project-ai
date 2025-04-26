@@ -157,7 +157,7 @@ def verify_payment_signature(params_dict: dict):
 
         # Generate signature using HMAC-SHA256
         generated_signature = hmac.new(
-            settings.RAZORPAY_KEY_SECRET.encode(),
+            settings.RAZORPAY_API_SECRET.encode(),
             msg.encode(),
             hashlib.sha256
         ).hexdigest()
