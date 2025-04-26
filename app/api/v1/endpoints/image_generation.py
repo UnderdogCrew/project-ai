@@ -1,16 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.db.mongodb import get_database
 from app.core.config import settings
 from datetime import datetime
 from openai import OpenAI
-from app.schemas.image_generation import ImageGenerationRequest, ImageGenerationResponse
-import base64
+from app.schemas.image_generation import ImageGenerationRequest, ImageGenerationResponse, PaymentOrderRequest, PaymentOrderResponse, PaymentVerificationRequest, PaymentVerificationResponse
 import requests
 import os, sys
 from app.core.config import settings
 import boto3
-import uuid
+from app.utils.razorpay_utils import create_razorpay_order, verify_razorpay_payment, verify_payment_signature
+import hmac
+import hashlib
 
 router = APIRouter()
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -49,7 +50,12 @@ async def generate_image(
     image_path = ""
     file_url = ""
     try:
-        
+        payment_order = await db[settings.MONGODB_DB_NAME]["payment_orders"].find_one({"order_id": request.payment_order_id})
+        if payment_order is None:
+            raise HTTPException(status_code=400, detail="Payment order not found")
+        if payment_order['status'] != "completed" and payment_order['is_used'] != True:
+            raise HTTPException(status_code=400, detail="Payment order not completed")
+
         # Generate image using DALL-E 3
         prompt = """
             Generate a image.
@@ -127,6 +133,12 @@ async def generate_image(
         }
         
         await db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
+        await db[settings.MONGODB_DB_NAME]["payment_orders"].update_one(
+            {"order_id": request.payment_order_id},
+            {
+                "$set": {"is_used": True}
+            }
+        )
         os.remove(filepath)
         # os.remove(image_path)
         return ImageGenerationResponse(
@@ -146,3 +158,102 @@ async def generate_image(
         except:
             pass
         raise HTTPException(status_code=500, detail=f"Failed to generate image: {str(e)}") 
+    
+
+
+
+@router.post("/create-payment", response_model=PaymentOrderResponse)
+async def create_payment(
+    request: PaymentOrderRequest,
+    db: AsyncIOMotorClient = Depends(get_database),
+):
+    """
+    Create a payment order for image generation credits
+    """
+    try:
+        # Create notes for the order
+        notes = {
+            "user_id": request.email if request.email is not None else "",
+            "service": "image_generation",
+        }
+
+        # Use existing razorpay_utils function
+        order_response, error = create_razorpay_order(
+            amount=request.amount * 100,  # Convert to paise
+            currency="INR",
+            receipt=f"receipt_{datetime.now().timestamp()}",
+            notes=notes
+        )
+
+        if error:
+            raise HTTPException(status_code=400, detail=str(error))
+
+        # Store order details in MongoDB
+        await db[settings.MONGODB_DB_NAME]["payment_orders"].insert_one({
+            "order_id": order_response['id'],
+            "user_email": request.email if request.email is not None else "",
+            "amount": request.amount,
+            "status": "created",
+            "created_at": datetime.now()
+        })
+
+        return PaymentOrderResponse(
+            order_id=order_response['id'],
+            amount=order_response['amount'],
+            currency=order_response['currency'],
+            message="Payment order created successfully"
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create payment order: {str(e)}")
+
+
+@router.post("/verify-payment", response_model=PaymentVerificationResponse)
+async def verify_payment(
+    request: PaymentVerificationRequest,
+    db: AsyncIOMotorClient = Depends(get_database),
+):
+    """
+    Verify Razorpay payment and add credits
+    """
+    try:
+        # Verify signature
+        params_dict = {
+            'razorpay_payment_id': request.razorpay_payment_id,
+            'razorpay_order_id': request.razorpay_order_id,
+            'razorpay_signature': request.razorpay_signature
+        }
+
+        if not verify_payment_signature(params_dict):
+            return PaymentVerificationResponse(
+            success=False,
+            message="Payment verification failed"
+        )   
+
+        # Get payment details
+        payment, error = verify_razorpay_payment(request.razorpay_payment_id, request.razorpay_order_id)
+        if error:
+            raise HTTPException(status_code=400, detail=str(error))
+        
+        if payment['status'] != "captured":
+            raise HTTPException(status_code=400, detail="Payment not captured")
+        
+        # Update payment status
+        await db[settings.MONGODB_DB_NAME]["payment_orders"].update_one(
+            {"order_id": request.razorpay_order_id},
+            {
+                "$set": {
+                    "status": "completed",
+                    "payment_id": request.razorpay_payment_id,
+                    "completed_at": datetime.now()
+                }
+            }
+        )
+
+        return PaymentVerificationResponse(
+            success=True,
+            message="Payment verified successfully",
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Payment verification failed: {str(e)}")
