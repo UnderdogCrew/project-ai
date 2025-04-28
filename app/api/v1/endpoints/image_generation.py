@@ -91,9 +91,9 @@ async def generate_image(
             print(f"Failed to download image. Status code: {response.status_code}")
 
 
-        if request.feeling is not None:
-            if request.feeling != "":
-                prompt += f" with Feeling: {request.feeling}"
+        # if request.feeling is not None:
+        #     if request.feeling != "":
+        #         prompt += f" with Feeling: {request.feeling}"
         
         print(prompt)
         response = client.images.edit(
