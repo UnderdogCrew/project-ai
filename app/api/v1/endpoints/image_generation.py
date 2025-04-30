@@ -421,7 +421,7 @@ async def get_images_by_email(
     """
     Fetch all image URLs for a given email.
     """
-    cursor = db[settings.MONGODB_DB_NAME]["image_generation_logs"].find({"email": email, "status": "success"}).sort("_id", -1)
+    cursor = await db[settings.MONGODB_DB_NAME]["image_generation_logs"].find({"email": email, "status": "success"}).sort("_id", -1)
     images = []
     async for doc in cursor:
         images.append(
