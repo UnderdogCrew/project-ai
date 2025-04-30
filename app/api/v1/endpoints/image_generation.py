@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, BackgroundTasks, Query
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, Query
+import threading
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.db.mongodb import get_database
 from app.core.config import settings
@@ -390,7 +391,6 @@ async def process_image_generation(request: ImageGenerationRequestV1, db, s3_cli
 async def generate_ai_image(
     request: ImageGenerationRequestV1,
     db: AsyncIOMotorClient = Depends(get_database),
-    background_tasks: BackgroundTasks = Depends(),
 ):
     """
     Start image generation in the background and return immediately.
@@ -403,7 +403,9 @@ async def generate_ai_image(
         raise HTTPException(status_code=400, detail="Payment order not completed")
 
     # Start background task
-    background_tasks.add_task(process_image_generation, request, db, s3_client, bucket_name, region)
+    # background_tasks.add_task(process_image_generation, request, db, s3_client, bucket_name, region)
+    thread_data = threading.Thread(process_image_generation, args=(request, db, s3_client, bucket_name, region,))
+    thread_data.start()
 
     # Respond immediately
     return ImageGenerationResponse(
