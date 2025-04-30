@@ -30,3 +30,19 @@ class PaymentVerificationRequest(BaseModel):
 class PaymentVerificationResponse(BaseModel):
     success: bool
     message: str
+
+
+
+class ImageGenerationRequestV1(BaseModel):
+    url: str
+    art: Optional[str] = None
+    payment_order_id: str
+    email: str
+    feeling: Optional[str] = None
+
+
+
+class ImageUrlResponse(BaseModel):
+    image_url: str
+    art: Optional[str] = None
+    feeling: Optional[str] = None

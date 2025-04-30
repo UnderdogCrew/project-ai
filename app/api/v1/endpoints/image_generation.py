@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, BackgroundTasks, Query
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.db.mongodb import get_database
 from app.core.config import settings
 from datetime import datetime
 from openai import OpenAI
-from app.schemas.image_generation import ImageGenerationRequest, ImageGenerationResponse, PaymentOrderRequest, PaymentOrderResponse, PaymentVerificationRequest, PaymentVerificationResponse
+from app.schemas.image_generation import ImageGenerationRequest, ImageGenerationResponse, PaymentOrderRequest, PaymentOrderResponse, PaymentVerificationRequest, PaymentVerificationResponse, ImageGenerationRequestV1, ImageUrlResponse
 import requests
 import os, sys
 from app.core.config import settings
@@ -14,6 +14,8 @@ import hmac
 import hashlib
 import uuid
 import base64
+from typing import List, Optional
+from pydantic import BaseModel
 
 
 
@@ -273,3 +275,162 @@ async def verify_payment(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Payment verification failed: {str(e)}")
+    
+
+
+async def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, bucket_name, region):
+    import sys
+    filepath = ""
+    image_path = ""
+    try:
+        payment_order = await db[settings.MONGODB_DB_NAME]["payment_orders"].find_one({"order_id": request.payment_order_id})
+        if payment_order is None:
+            return
+        if payment_order['status'] != "completed" and payment_order['is_used'] != True:
+            return
+
+        prompt = "Generate a image."
+        if request.art is not None and request.art != "":
+            prompt = f"Convert Image to {request.art} Style Image"
+
+        image_url = request.url
+        image_name = image_url.split("/")[-1]
+        filepath = os.path.join(image_name)
+        _, file_extension = os.path.splitext(image_name)
+
+        response = requests.get(image_url)
+        if response.status_code == 200:
+            with open(filepath, "wb") as f:
+                f.write(response.content)
+        else:
+            return
+
+        response = client.images.edit(
+            model="gpt-image-1",
+            prompt=prompt,
+            image=open(filepath, "rb"),
+            size="1024x1536",
+            quality="high",
+            n=1,
+        )
+
+        input_tokens = response.usage.input_tokens
+        output_tokens = response.usage.output_tokens
+        cost_per_image = 0.080
+        total_cost = cost_per_image * 1
+
+        image_base64 = response.data[0].b64_json
+        image_bytes = base64.b64decode(image_base64)
+        image_path = os.path.join(f"{int(datetime.now().timestamp())}_{image_name}")
+
+        with open(f"{image_path}", "wb") as f:
+            f.write(image_bytes)
+
+        file_key = f"image_generation/{str(uuid.uuid4())}{file_extension}"
+
+        s3_client.upload_fileobj(
+            open(image_path, "rb"),
+            bucket_name,
+            file_key,
+            ExtraArgs={'ACL': 'public-read', 'ContentType': 'auto'}
+        )
+        file_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{file_key}"
+
+        log_data = {
+            "art": request.art,
+            "email": request.email,
+            "feeling": request.feeling,
+            "created_at": datetime.now(),
+            "status": "success",
+            "image_url": file_url,
+            "payment_order_id": request.payment_order_id,
+            "cost_usd": total_cost,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens
+        }
+
+        await db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
+        await db[settings.MONGODB_DB_NAME]["payment_orders"].update_one(
+            {"order_id": request.payment_order_id},
+            {"$set": {"is_used": True}}
+        )
+        os.remove(filepath)
+        os.remove(image_path)
+    except Exception as e:
+        try:
+            os.remove(filepath)
+        except:
+            pass
+        try:
+            os.remove(image_path)
+        except:
+            pass
+        
+        log_data = {
+            "art": request.art,
+            "email": request.email,
+            "feeling": request.feeling,
+            "created_at": datetime.now(),
+            "status": "error",
+            "message": f"Background image generation failed: {str(e)}",
+            "image_url": "",
+            "payment_order_id": request.payment_order_id,
+            "cost_usd": 0,
+            "input_tokens": 0,
+            "output_tokens": 0
+        }
+
+        await db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
+
+        print(f"Background image generation failed: {str(e)}")
+
+
+
+@router.post("/", response_model=ImageGenerationResponse)
+async def generate_ai_image(
+    request: ImageGenerationRequestV1,
+    db: AsyncIOMotorClient = Depends(get_database),
+    background_tasks: BackgroundTasks = Depends(),
+):
+    """
+    Start image generation in the background and return immediately.
+    """
+    # Optionally, you can do some quick validation here
+    payment_order = await db[settings.MONGODB_DB_NAME]["payment_orders"].find_one({"order_id": request.payment_order_id})
+    if payment_order is None:
+        raise HTTPException(status_code=400, detail="Payment order not found")
+    if payment_order['status'] != "completed" and payment_order['is_used'] != True:
+        raise HTTPException(status_code=400, detail="Payment order not completed")
+
+    # Start background task
+    background_tasks.add_task(process_image_generation, request, db, s3_client, bucket_name, region)
+
+    # Respond immediately
+    return ImageGenerationResponse(
+        url=None,
+        message="Image generation started. You will be notified when it is complete."
+    ) 
+
+
+
+@router.get("/images/by-email", response_model=List[ImageUrlResponse])
+async def get_images_by_email(
+    email: str = Query(..., description="User's email to fetch images for"),
+    db: AsyncIOMotorClient = Depends(get_database),
+):
+    """
+    Fetch all image URLs for a given email.
+    """
+    cursor = db[settings.MONGODB_DB_NAME]["image_generation_logs"].find({"email": email, "status": "success"}).sort("_id", -1)
+    images = []
+    async for doc in cursor:
+        images.append(
+            ImageUrlResponse(
+                image_url=doc.get("image_url", ""),
+                art=doc.get("art"),
+                feeling=doc.get("feeling"),
+            )
+        )
+    if len(images) == 0:
+        raise HTTPException(status_code=404, detail="No images found for this email")
+    return images 
