@@ -318,7 +318,7 @@ def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, b
         output_tokens = response.usage.output_tokens
         cost_per_image = 0.080
         total_cost = cost_per_image * 1
-        print(f"input tokens: {input_tokens}")
+        print(f"input_tokens: {input_tokens}")
         image_base64 = response.data[0].b64_json
         image_bytes = base64.b64decode(image_base64)
         image_path = os.path.join(f"{int(datetime.now().timestamp())}_{image_name}")
@@ -349,8 +349,8 @@ def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, b
             "output_tokens": output_tokens
         }
 
-        db["image_generation_logs"].insert_one(log_data)
-        db["payment_orders"].update_one(
+        sync_db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
+        sync_db[settings.MONGODB_DB_NAME]["payment_orders"].update_one(
             {"order_id": request.payment_order_id},
             {"$set": {"is_used": True}}
         )
@@ -380,7 +380,7 @@ def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, b
             "output_tokens": 0
         }
 
-        db["image_generation_logs"].insert_one(log_data)
+        sync_db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
 
         print(f"Background image generation failed: {str(e)}")
 
