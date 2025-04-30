@@ -68,6 +68,8 @@ async def generate_image(
         if request.art is not None:
             if request.art != "":
                 prompt = f"Convert Image to {request.art} Style Image"
+            
+        print(f"prompt: {prompt}")
 
         image_url = request.url
 
@@ -95,16 +97,22 @@ async def generate_image(
         #     if request.feeling != "":
         #         prompt += f" with Feeling: {request.feeling}"
         
-        print(prompt)
         response = client.images.edit(
             model="gpt-image-1",
             prompt=prompt,
             image=open(filepath, "rb"),
-            size="1024x1024",
-            # quality="medium",
+            size="1024x1536",
+            quality="high",
             n=1,
         )
-        print(response.usage)
+        print(response.usage.input_tokens)
+
+        input_tokens = response.usage.input_tokens
+        output_tokens = response.usage.output_tokens
+
+        cost_per_image = 0.080
+        total_cost = cost_per_image*1
+
         image_base64 = response.data[0].b64_json
         image_bytes = base64.b64decode(image_base64)
 
@@ -133,7 +141,11 @@ async def generate_image(
             "art": request.art,
             "feeling": request.feeling,
             "created_at": datetime.now(),
-            "image_url": file_url
+            "image_url": file_url,
+            "payment_order_id": request.payment_order_id,
+            "cost_usd": total_cost,  # Add this line,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens
         }
         
         await db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
