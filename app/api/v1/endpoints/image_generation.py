@@ -387,7 +387,7 @@ async def process_image_generation(request: ImageGenerationRequestV1, db, s3_cli
 
 
 
-@router.post("/generate", response_model=ImageGenerationResponse)
+@router.post("/generate", response_model=ImageGenerationResponseV1)
 async def generate_ai_image(
     request: ImageGenerationRequestV1,
     db: AsyncIOMotorClient = Depends(get_database),
