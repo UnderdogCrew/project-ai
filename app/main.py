@@ -33,8 +33,6 @@ app.include_router(dashboard.router, prefix=f"{settings.API_V1_STR}/dashboard", 
 app.include_router(contact_us.router, prefix=f"{settings.API_V1_STR}/contact", tags=["contact"])
 app.include_router(subscription.router, prefix=f"{settings.API_V1_STR}/subscription", tags=["subscription"])
 app.include_router(image_generation.router, prefix=f"{settings.API_V1_STR}/image", tags=["image-generation"])
-app.include_router(image_generation.router, prefix=f"{settings.API_V1_STR}/image-generation", tags=["image-generation"])
-app.include_router(image_generation.router, prefix=f"{settings.API_V1_STR}/image-list", tags=["image-list"])
 
 
 @app.on_event("startup")

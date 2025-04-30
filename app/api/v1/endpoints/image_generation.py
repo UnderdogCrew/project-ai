@@ -387,7 +387,7 @@ async def process_image_generation(request: ImageGenerationRequestV1, db, s3_cli
 
 
 
-@router.post("/", response_model=ImageGenerationResponse)
+@router.post("/generate", response_model=ImageGenerationResponse)
 async def generate_ai_image(
     request: ImageGenerationRequestV1,
     db: AsyncIOMotorClient = Depends(get_database),
@@ -415,7 +415,7 @@ async def generate_ai_image(
 
 
 
-@router.get("/images/by-email", response_model=List[ImageUrlResponse])
+@router.get("/list", response_model=List[ImageUrlResponse])
 async def get_images_by_email(
     email: str = Query(..., description="User's email to fetch images for"),
     db: AsyncIOMotorClient = Depends(get_database),
