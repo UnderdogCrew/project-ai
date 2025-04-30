@@ -5,7 +5,7 @@ from app.db.mongodb import get_database
 from app.core.config import settings
 from datetime import datetime
 from openai import OpenAI
-from app.schemas.image_generation import ImageGenerationRequest, ImageGenerationResponse, PaymentOrderRequest, PaymentOrderResponse, PaymentVerificationRequest, PaymentVerificationResponse, ImageGenerationRequestV1, ImageUrlResponse
+from app.schemas.image_generation import ImageGenerationRequest, ImageGenerationResponse, PaymentOrderRequest, PaymentOrderResponse, PaymentVerificationRequest, PaymentVerificationResponse, ImageGenerationRequestV1, ImageUrlResponse, ImageGenerationResponseV1
 import requests
 import os, sys
 from app.core.config import settings
@@ -408,8 +408,7 @@ async def generate_ai_image(
     thread_data.start()
 
     # Respond immediately
-    return ImageGenerationResponse(
-        url=None,
+    return ImageGenerationResponseV1(
         message="Image generation started. You will be notified when it is complete."
     ) 
 

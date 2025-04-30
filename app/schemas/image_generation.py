@@ -12,6 +12,9 @@ class ImageGenerationResponse(BaseModel):
     message: str
 
 
+class ImageGenerationResponseV1(BaseModel):
+    message: str
+
 class PaymentOrderRequest(BaseModel):
     email: Optional[str] = None
     amount: int
