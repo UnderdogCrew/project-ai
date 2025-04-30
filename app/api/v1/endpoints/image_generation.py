@@ -20,8 +20,8 @@ from pydantic import BaseModel
 import asyncio
 from pymongo import MongoClient
 
-client = MongoClient(settings.MONGODB_CLUSTER_URL)  # or your MongoDB URI
-sync_db = client[settings.MONGODB_DB_NAME]
+sync_db = MongoClient(settings.MONGODB_CLUSTER_URL)  # or your MongoDB URI
+# sync_db = client[settings.MONGODB_DB_NAME]
 
 
 
