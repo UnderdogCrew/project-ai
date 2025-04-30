@@ -427,7 +427,7 @@ async def get_images_by_email(
                 image_url=doc.get("image_url", ""),
                 art=doc.get("art"),
                 feeling=doc.get("feeling"),
-                created_at=doc.get("created_at").strftime("%d/%m/%Y %H:%M")
+                date=doc.get("created_at").strftime("%d/%m/%Y %H:%M")
             )
         )
     if len(images) == 0:
