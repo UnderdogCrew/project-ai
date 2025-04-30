@@ -280,12 +280,12 @@ async def verify_payment(
     
 
 
-async def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, bucket_name, region):
+def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, bucket_name, region):
     import sys
     filepath = ""
     image_path = ""
     try:
-        payment_order = await db[settings.MONGODB_DB_NAME]["payment_orders"].find_one({"order_id": request.payment_order_id})
+        payment_order = db[settings.MONGODB_DB_NAME]["payment_orders"].find_one({"order_id": request.payment_order_id})
         if payment_order is None:
             return
         if payment_order['status'] != "completed" and payment_order['is_used'] != True:
@@ -351,8 +351,8 @@ async def process_image_generation(request: ImageGenerationRequestV1, db, s3_cli
             "output_tokens": output_tokens
         }
 
-        await db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
-        await db[settings.MONGODB_DB_NAME]["payment_orders"].update_one(
+        db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
+        db[settings.MONGODB_DB_NAME]["payment_orders"].update_one(
             {"order_id": request.payment_order_id},
             {"$set": {"is_used": True}}
         )
@@ -382,7 +382,7 @@ async def process_image_generation(request: ImageGenerationRequestV1, db, s3_cli
             "output_tokens": 0
         }
 
-        await db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
+        db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
 
         print(f"Background image generation failed: {str(e)}")
 
