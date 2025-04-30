@@ -49,3 +49,4 @@ class ImageUrlResponse(BaseModel):
     image_url: str
     art: Optional[str] = None
     feeling: Optional[str] = None
+    date: str

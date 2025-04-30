@@ -313,12 +313,12 @@ def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, b
             quality="high",
             n=1,
         )
-
+        print(f"Image generated successfully")
         input_tokens = response.usage.input_tokens
         output_tokens = response.usage.output_tokens
         cost_per_image = 0.080
         total_cost = cost_per_image * 1
-
+        print(f"input tokens: {input_tokens}")
         image_base64 = response.data[0].b64_json
         image_bytes = base64.b64decode(image_base64)
         image_path = os.path.join(f"{int(datetime.now().timestamp())}_{image_name}")
@@ -427,6 +427,7 @@ async def get_images_by_email(
                 image_url=doc.get("image_url", ""),
                 art=doc.get("art"),
                 feeling=doc.get("feeling"),
+                created_at=doc.get("created_at").strftime("%d/%m/%Y %H:%M")
             )
         )
     if len(images) == 0:
