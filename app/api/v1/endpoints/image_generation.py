@@ -17,6 +17,7 @@ import uuid
 import base64
 from typing import List, Optional
 from pydantic import BaseModel
+import asyncio
 
 
 
@@ -403,9 +404,7 @@ async def generate_ai_image(
         raise HTTPException(status_code=400, detail="Payment order not completed")
 
     # Start background task
-    # background_tasks.add_task(process_image_generation, request, db, s3_client, bucket_name, region)
-    thread_data = threading.Thread(target=process_image_generation, args=(request, db, s3_client, bucket_name, region,))
-    thread_data.start()
+    asyncio.create_task(process_image_generation(request, db, s3_client, bucket_name, region))
 
     # Respond immediately
     return ImageGenerationResponseV1(
