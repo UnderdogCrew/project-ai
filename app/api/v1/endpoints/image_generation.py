@@ -404,7 +404,7 @@ async def generate_ai_image(
 
     # Start background task
     # background_tasks.add_task(process_image_generation, request, db, s3_client, bucket_name, region)
-    thread_data = threading.Thread(process_image_generation, args=(request, db, s3_client, bucket_name, region,))
+    thread_data = threading.Thread(target=process_image_generation, args=(request, db, s3_client, bucket_name, region,))
     thread_data.start()
 
     # Respond immediately
