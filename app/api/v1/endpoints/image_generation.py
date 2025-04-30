@@ -403,8 +403,8 @@ async def generate_ai_image(
     if payment_order['status'] != "completed" and payment_order['is_used'] != True:
         raise HTTPException(status_code=400, detail="Payment order not completed")
 
-    # Start background task
-    asyncio.create_task(process_image_generation(request, db, s3_client, bucket_name, region))
+    # # Start background task
+    # asyncio.create_task(process_image_generation(request, db, s3_client, bucket_name, region))
 
     # Respond immediately
     return ImageGenerationResponseV1(
