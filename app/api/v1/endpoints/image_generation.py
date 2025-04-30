@@ -285,16 +285,9 @@ async def verify_payment(
 
 
 def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, bucket_name, region):
-    import sys
     filepath = ""
     image_path = ""
     try:
-        payment_order = db[settings.MONGODB_DB_NAME]["payment_orders"].find_one({"order_id": request.payment_order_id})
-        if payment_order is None:
-            return
-        if payment_order['status'] != "completed" and payment_order['is_used'] != True:
-            return
-
         prompt = "Generate a image."
         if request.art is not None and request.art != "":
             prompt = f"Convert Image to {request.art} Style Image"
@@ -311,6 +304,7 @@ def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, b
         else:
             return
 
+        print(f"prompt: {prompt}")
         response = client.images.edit(
             model="gpt-image-1",
             prompt=prompt,
@@ -355,8 +349,8 @@ def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, b
             "output_tokens": output_tokens
         }
 
-        db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
-        db[settings.MONGODB_DB_NAME]["payment_orders"].update_one(
+        db["image_generation_logs"].insert_one(log_data)
+        db["payment_orders"].update_one(
             {"order_id": request.payment_order_id},
             {"$set": {"is_used": True}}
         )
@@ -386,7 +380,7 @@ def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, b
             "output_tokens": 0
         }
 
-        db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
+        db["image_generation_logs"].insert_one(log_data)
 
         print(f"Background image generation failed: {str(e)}")
 
