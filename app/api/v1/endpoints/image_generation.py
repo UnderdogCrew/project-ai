@@ -18,6 +18,10 @@ import base64
 from typing import List, Optional
 from pydantic import BaseModel
 import asyncio
+from pymongo import MongoClient
+
+client = MongoClient(settings.MONGODB_CLUSTER_URL)  # or your MongoDB URI
+sync_db = client[settings.MONGODB_DB_NAME]
 
 
 
@@ -391,13 +395,12 @@ def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, b
 @router.post("/generate", response_model=ImageGenerationResponseV1)
 def generate_ai_image(
     request: ImageGenerationRequestV1,
-    db: AsyncIOMotorClient = Depends(get_database),
 ):
     """
     Start image generation in the background and return immediately.
     """
     # Optionally, you can do some quick validation here
-    payment_order = db[settings.MONGODB_DB_NAME]["payment_orders"].find_one({"order_id": request.payment_order_id})
+    payment_order = sync_db[settings.MONGODB_DB_NAME]["payment_orders"].find_one({"order_id": request.payment_order_id})
     if payment_order is None:
         raise HTTPException(status_code=400, detail="Payment order not found")
     if payment_order['status'] != "completed" and payment_order['is_used'] != True:
@@ -405,7 +408,7 @@ def generate_ai_image(
 
     # # Start background task
     # asyncio.create_task(process_image_generation(request, db, s3_client, bucket_name, region))
-    threading.Thread(target=process_image_generation, args=(request, db, s3_client, bucket_name, region,)).start()
+    threading.Thread(target=process_image_generation, args=(request, sync_db, s3_client, bucket_name, region,)).start()
 
     # Respond immediately
     return ImageGenerationResponseV1(
