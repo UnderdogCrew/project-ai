@@ -284,7 +284,7 @@ async def verify_payment(
     
 
 
-def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, bucket_name, region):
+def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, bucket_name, region, request_id):
     filepath = ""
     image_path = ""
     try:
@@ -326,7 +326,7 @@ def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, b
         with open(f"{image_path}", "wb") as f:
             f.write(image_bytes)
 
-        file_key = f"image_generation/{str(uuid.uuid4())}{file_extension}"
+        file_key = f"image_generation/{str(request_id)}{file_extension}"
 
         s3_client.upload_fileobj(
             open(image_path, "rb"),
@@ -339,6 +339,7 @@ def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, b
         log_data = {
             "art": request.art,
             "email": request.email,
+            "request_id": request_id,
             "feeling": request.feeling,
             "created_at": datetime.now(),
             "status": "success",
@@ -370,6 +371,7 @@ def process_image_generation(request: ImageGenerationRequestV1, db, s3_client, b
             "art": request.art,
             "email": request.email,
             "feeling": request.feeling,
+            "request_id": request_id,
             "created_at": datetime.now(),
             "status": "error",
             "message": f"Background image generation failed: {str(e)}",
@@ -393,6 +395,7 @@ def generate_ai_image(
     """
     Start image generation in the background and return immediately.
     """
+    request_id = uuid.uuid4()
     # Optionally, you can do some quick validation here
     payment_order = sync_db[settings.MONGODB_DB_NAME]["payment_orders"].find_one({"order_id": request.payment_order_id})
     if payment_order is None:
@@ -402,11 +405,12 @@ def generate_ai_image(
 
     # # Start background task
     # asyncio.create_task(process_image_generation(request, db, s3_client, bucket_name, region))
-    threading.Thread(target=process_image_generation, args=(request, sync_db, s3_client, bucket_name, region,)).start()
+    threading.Thread(target=process_image_generation, args=(request, sync_db, s3_client, bucket_name, region,request_id,)).start()
 
     # Respond immediately
     return ImageGenerationResponseV1(
-        message="Image generation started. You will be notified when it is complete."
+        message="Image generation started. You will be notified when it is complete.",
+        request_id=request_id
     ) 
 
 
