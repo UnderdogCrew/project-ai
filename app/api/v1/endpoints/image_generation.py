@@ -61,6 +61,7 @@ async def generate_image(
     filepath = ""
     image_path = ""
     file_url = ""
+    request_id = uuid.uuid4()
     try:
         payment_order = await db[settings.MONGODB_DB_NAME]["payment_orders"].find_one({"order_id": request.payment_order_id})
         if payment_order is None:
@@ -131,7 +132,7 @@ async def generate_image(
         with open(f"{image_path}", "wb") as f:
             f.write(image_bytes)
 
-        file_key = f"image_generation/{str(uuid.uuid4())}{file_extension}"
+        file_key = f"image_generation/{request_id}{file_extension}"
 
         # Upload file to S3
         s3_client.upload_fileobj(
@@ -147,11 +148,14 @@ async def generate_image(
         # Log the image generation
         log_data = {
             "art": request.art,
+            "email": request.email,
+            "request_id": request_id,
             "feeling": request.feeling,
             "created_at": datetime.now(),
+            "status": "success",
             "image_url": file_url,
             "payment_order_id": request.payment_order_id,
-            "cost_usd": total_cost,  # Add this line,
+            "cost_usd": total_cost,
             "input_tokens": input_tokens,
             "output_tokens": output_tokens
         }
@@ -181,6 +185,24 @@ async def generate_image(
             os.remove(image_path)
         except:
             pass
+        
+        log_data = {
+            "art": request.art,
+            "email": request.email,
+            "feeling": request.feeling,
+            "request_id": request_id,
+            "created_at": datetime.now(),
+            "status": "error",
+            "message": f"Background image generation failed: {str(e)}",
+            "image_url": "",
+            "payment_order_id": request.payment_order_id,
+            "cost_usd": 0,
+            "input_tokens": 0,
+            "output_tokens": 0
+        }
+
+        sync_db[settings.MONGODB_DB_NAME]["image_generation_logs"].insert_one(log_data)
+
         raise HTTPException(status_code=500, detail=f"Failed to generate image: {str(e)}") 
     
 

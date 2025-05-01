@@ -6,6 +6,7 @@ class ImageGenerationRequest(BaseModel):
     art: Optional[str] = None
     feeling: Optional[str] = None
     payment_order_id: str
+    email: Optional[str] = None
     
 class ImageGenerationResponse(BaseModel):
     url: str
