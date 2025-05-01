@@ -61,7 +61,7 @@ async def generate_image(
     filepath = ""
     image_path = ""
     file_url = ""
-    request_id = uuid.uuid4()
+    request_id = str(uuid.uuid4())
     try:
         payment_order = await db[settings.MONGODB_DB_NAME]["payment_orders"].find_one({"order_id": request.payment_order_id})
         if payment_order is None:
