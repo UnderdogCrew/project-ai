@@ -225,7 +225,7 @@ async def create_payment(
 
         # Use existing razorpay_utils function
         order_response, error = create_razorpay_order(
-            amount=1*100,#request.amount * 100,  # Convert to paise
+            amount=request.amount * 100,  # Convert to paise
             currency="INR",
             receipt=f"receipt_{datetime.now().timestamp()}",
             notes=notes
