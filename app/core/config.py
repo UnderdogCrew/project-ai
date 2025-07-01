@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     RAZORPAY_API_KEY : str = os.environ.get("RAZORPAY_API_KEY")
     RAZORPAY_API_SECRET : str = os.environ.get("RAZORPAY_API_SECRET")
 
+    # SendGrid Email Settings
+    SENDGRID_API_KEY: str = os.environ.get("SENDGRID_API_KEY")
+    SENDGRID_FROM_EMAIL: str = os.environ.get("SENDGRID_FROM_EMAIL")
+    ADMIN_EMAIL: str = "hello@theunderdogcrew.com"
+
 
     
     # If you need to construct the full URL with authentication
