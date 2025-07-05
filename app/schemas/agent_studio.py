@@ -76,4 +76,5 @@ class AgentWaitlist(BaseModel):
 class ContactUslist(BaseModel):
     email: str
     name: str
+    company: str
     message: str
