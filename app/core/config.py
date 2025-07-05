@@ -55,7 +55,7 @@ class Settings(BaseSettings):
 
     # SendGrid Email Settings
     SENDGRID_API_KEY: str = os.environ.get("SENDGRID_API_KEY")
-    SENDGRID_FROM_EMAIL: str = os.environ.get("SENDGRID_FROM_EMAIL")
+    SENDGRID_FROM_EMAIL: str = "hello@theunderdogcrew.com"
     ADMIN_EMAIL: str = "hello@theunderdogcrew.com"
 
 

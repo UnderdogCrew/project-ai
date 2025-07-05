@@ -1,8 +1,13 @@
 import logging
+import ssl
+import certifi
+import urllib3
+import os
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, To, Content
 from app.core.config import settings
 from typing import Optional
+ssl._create_default_https_context = ssl._create_unverified_context
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +17,13 @@ class EmailService:
             logger.warning("SendGrid API key not configured")
             self.client = None
         else:
-            self.client = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
+            try:
+                # Create SendGrid client
+                self.client = SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
+            except Exception as e:
+                logger.error(f"Failed to initialize SendGrid client: {str(e)}")
+                self.client = None
+
     
     async def send_contact_form_to_admin(
         self, 
@@ -88,7 +99,7 @@ class EmailService:
                 to_emails=to_email,
                 subject=subject,
                 plain_text_content=plain_text_content,
-                html_content=html_content
+                html_content=html_content,
             )
             
             # Send the email
