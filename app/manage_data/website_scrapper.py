@@ -13,6 +13,7 @@ from openai import OpenAI
 from langchain_core.documents import Document
 from app.api.v1.endpoints.chat.db_helper import save_website_scrapper_logs, update_website_scrapper_logs
 from firecrawl import FirecrawlApp, ScrapeOptions
+from app.core.config import settings
 
 FIRECRAWL_API_KEY=settings.FIRECRAWL_API_KEY
 
@@ -20,7 +21,6 @@ firecrawl_app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 
 client = OpenAI()
 import uuid
-from app.core.config import settings
 
 embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
 
