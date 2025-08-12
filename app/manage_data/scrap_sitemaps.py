@@ -18,6 +18,7 @@ def fetch_url(url, headers):
     try:
         response = requests.get(url, headers=headers, allow_redirects=True)
         response.raise_for_status()  # Raise an HTTPError for bad responses
+        print("Data found...!!!")
         return response
     except requests.RequestException as e:
         print(f"Error accessing {url}: {e}")
@@ -74,6 +75,7 @@ def find_all_urls(domain):
 
     # Check standard sitemap URLs
     for url in sitemap_urls[:2]:
+        print(f"url: {url}")
         response = fetch_url(url, headers)
         if response and is_xml(response):
             discover_sitemaps(url)
