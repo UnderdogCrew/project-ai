@@ -162,8 +162,25 @@ async def create_data_management(
         "updated_at": datetime.now(),
         "user_id": user_id
     }
+    update_data = {
+        **data.model_dump(exclude_none=True)
+    }
 
-    result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].insert_one(new_data)
+    existing_data_management = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].find_one(
+        {"rag_id": data.rag_id}
+    )
+
+    if existing_data_management is None:
+        result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].insert_one(new_data)
+    else:
+        result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].update_one(
+            {
+                "rag_id": data.rag_id
+            },
+            {
+                "$set": update_data
+            }
+        )
 
     # Get and return the created document
     created_data = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].find_one(
