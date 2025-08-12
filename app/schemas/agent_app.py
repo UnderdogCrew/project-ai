@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 class AgentAppBase(BaseModel):
     agentId: str
@@ -39,3 +39,12 @@ class AgentAppResponse(AgentAppBase):
 class PaginatedAgentAppResponse(BaseModel):
     total: int
     apps: List[AgentAppResponse] 
+
+
+class WebhookPayload(BaseModel):
+    success: Optional[bool] = None
+    type: Optional[str] = None
+    id: Optional[str] = None
+    data: List[Dict[str, Any]] = []
+    metadata: Dict[str, Any] = {}
+    error: Optional[str] = None

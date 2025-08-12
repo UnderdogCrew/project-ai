@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.db.mongodb import get_database
-from app.schemas.agent_app import AgentAppCreate, AgentAppUpdate, AgentAppResponse,PaginatedAgentAppResponse
+from app.schemas.agent_app import AgentAppCreate, AgentAppUpdate, AgentAppResponse,PaginatedAgentAppResponse, WebhookPayload
 from app.core.config import settings
 from bson import ObjectId
-from typing import List, Optional
+from typing import Optional, Any, Dict
 from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
 from app.api.v1.endpoints.chat.db_helper import fetch_user_details, update_user_credit
+from fastapi.responses import JSONResponse
 
 
 router = APIRouter()
@@ -187,3 +188,41 @@ async def delete_agent_app(app_id: str, db: AsyncIOMotorClient = Depends(get_dat
         raise http_exc
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 
+    
+
+# ---- Your processing function (stub) ----
+def process_scraped_page(page: Dict[str, Any]) -> None:
+    # TODO: implement your processing logic
+    # e.g., save to DB, enqueue a job, etc.
+    print(f"Processing page with URL: {page.get('metadata', {}).get('sourceURL')}")
+
+
+@router.post("/webhook")
+async def handle_webhook(payload: WebhookPayload, background: BackgroundTasks) -> JSONResponse:
+    success = payload.success
+    event_type = payload.type
+    job_id = payload.id
+    data = payload.data or []
+    metadata = payload.metadata or {}
+    error = payload.error
+
+    if event_type in ["crawl.started", "batch_scrape.started"]:
+        operation = event_type.split(".")[0]
+        print(f"{operation} {job_id} started")
+
+    elif event_type in ["crawl.page", "batch_scrape.page"]:
+        if success and data:
+            page = data[0]
+            print(f"Page scraped: {page.get('metadata', {}).get('sourceURL')}")
+            # Run processing off the request thread
+            background.add_task(process_scraped_page, page)
+
+    elif event_type in ["crawl.completed", "batch_scrape.completed"]:
+        operation = event_type.split(".")[0]
+        print(f"{operation} {job_id} completed successfully")
+
+    elif event_type in ["crawl.failed", "batch_scrape.failed"]:
+        operation = event_type.split(".")[0]
+        print(f"{operation} {job_id} failed: {error}")
+
+    return JSONResponse({"status": "received"}, status_code=200)
