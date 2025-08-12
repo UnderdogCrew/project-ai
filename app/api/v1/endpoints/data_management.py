@@ -186,7 +186,7 @@ async def create_data_management(
 
     # Get and return the created document
     created_data = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].find_one(
-        {"_id": inserted_id}
+        {"rag_id": data.rag_id}
     )
     created_data["id"] = str(created_data.pop("_id"))
     created_data.pop("user_id", None)
