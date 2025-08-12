@@ -91,6 +91,25 @@ def update_website_scrapper_logs(data):
     return str(result.modified_count)  # Return the ID of the inserted document
 
 
+def update_data_management_logs(data):
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
+    db = client[settings.MONGODB_DB_NAME]
+
+    result = db[settings.MONGODB_COLLECTION_DATA_MANAGEMENT].update_one(
+        {
+            "rag_id": data['rag_id']
+        },
+        {
+            "$set": {
+                "files": data['files']
+            }
+        }
+    )
+    client.close()
+
+    return str(result.modified_count)  # Return the ID of the inserted document
+
+
 def get_agent_history_data(query, skip, limit):
     client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]

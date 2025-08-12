@@ -11,7 +11,7 @@ from qdrant_client.http.models import PointStruct, VectorParams
 from qdrant_client import QdrantClient
 from openai import OpenAI
 from langchain_core.documents import Document
-from app.api.v1.endpoints.chat.db_helper import save_website_scrapper_logs, update_website_scrapper_logs
+from app.api.v1.endpoints.chat.db_helper import save_website_scrapper_logs, update_website_scrapper_logs, update_data_management_logs
 from firecrawl import FirecrawlApp, ScrapeOptions
 from app.core.config import settings
 
@@ -92,6 +92,7 @@ def process_element(element):
 
 def scrap_website(account_id, knowledge_source, user_id, max_crawl_depth: int = 1, max_crawl_page: int = 1, dynamic_wait: int = 5):
     print("inside scrap data")
+    final_url = []
     embedding_id = f"{str(account_id)}"
 
     # Define chunk size and overlap based on recommendations
@@ -130,6 +131,7 @@ def scrap_website(account_id, knowledge_source, user_id, max_crawl_depth: int = 
         )
         for page in crawl_result.data:
             url = page.metadata['url']
+            final_url.append(url)
             metadata = page.metadata
             content_data = page.markdown
             generate_logs = {
@@ -165,6 +167,11 @@ def scrap_website(account_id, knowledge_source, user_id, max_crawl_depth: int = 
             update_website_scrapper_logs(data=update_logs)
     except Exception as e:
         print("e", e)
-
+    update_data_management_logs(
+        data = {
+            "rag_id": account_id,
+            "files": final_url,
+        }
+    )
     print(f'File Scrapped Successfully')
     return True
