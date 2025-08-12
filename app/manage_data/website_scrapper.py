@@ -161,7 +161,7 @@ def scrap_website(account_id, knowledge_source, user_id, max_crawl_depth: int = 
             update_logs = {
                 "rag_id": account_id,
                 "link": url,
-                "page_content": url,
+                "page_content": content_data,
                 "status": "SUCCESS"
             }
             update_website_scrapper_logs(data=update_logs)
@@ -169,7 +169,7 @@ def scrap_website(account_id, knowledge_source, user_id, max_crawl_depth: int = 
         print("e", e)
     update_data_management_logs(
         data = {
-            "rag_id": account_id,
+            "rag_id": str(account_id),
             "files": final_url,
         }
     )

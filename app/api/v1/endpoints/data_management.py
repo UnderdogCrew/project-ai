@@ -172,7 +172,6 @@ async def create_data_management(
 
     if existing_data_management is None:
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].insert_one(new_data)
-        inserted_id = result.inserted_id
     else:
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].update_one(
             {
@@ -182,7 +181,6 @@ async def create_data_management(
                 "$set": update_data
             }
         )
-        inserted_id = result.upserted_id
 
     # Get and return the created document
     created_data = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_DATA_MANAGEMENT].find_one(
