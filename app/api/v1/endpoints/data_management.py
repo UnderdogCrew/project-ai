@@ -48,7 +48,10 @@ def process_data_source(
         rag_object_id: ObjectId,
         files: Optional[List[str]] = None,
         website_url: Optional[str] = None,
-        raw_text: Optional[str] = None
+        raw_text: Optional[str] = None,
+        max_crawl_depth: Optional[int] = 1,
+        max_crawl_page: Optional[int] = 1,
+        dynamic_wait: Optional[int] = 5
 ) -> None:
     """Process different types of data sources in a separate thread"""
     if source_type == DataSourceType.FILE and files:
@@ -56,7 +59,7 @@ def process_data_source(
             file_data(url=_file, rag_manage_id=rag_object_id)
 
     elif source_type == DataSourceType.WEBSITE and website_url:
-        scrap_website(rag_object_id, website_url, "1")
+        scrap_website(rag_object_id, website_url, "1", max_crawl_depth, max_crawl_page, dynamic_wait)
 
     elif source_type == DataSourceType.RAW_TEXT and raw_text:
         embedding_id = f"{str(rag_object_id)}"
@@ -142,7 +145,10 @@ async def create_data_management(
         kwargs={
             'files': data.files,
             'website_url': data.website_url,
-            'raw_text': data.raw_text
+            'raw_text': data.raw_text,
+            "max_crawl_depth": data.max_crawl_depth,
+            "max_crawl_page": data.max_crawl_page,
+            "dynamic_wait": data.dynamic_wait
         }
     )
     process_thread.start()
@@ -322,7 +328,10 @@ async def update_data_management(
         kwargs={
             'files': data.files,
             'website_url': data.website_url,
-            'raw_text': data.raw_text
+            'raw_text': data.raw_text,
+            "max_crawl_depth": data.max_crawl_depth,
+            "max_crawl_page": data.max_crawl_page,
+            "dynamic_wait": data.dynamic_wait
         }
     )
     process_thread.start()

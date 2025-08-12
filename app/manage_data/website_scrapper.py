@@ -12,6 +12,11 @@ from qdrant_client import QdrantClient
 from openai import OpenAI
 from langchain_core.documents import Document
 from app.api.v1.endpoints.chat.db_helper import save_website_scrapper_logs, update_website_scrapper_logs
+from firecrawl import FirecrawlApp, ScrapeOptions
+
+FIRECRAWL_API_KEY=settings.FIRECRAWL_API_KEY
+
+firecrawl_app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 
 client = OpenAI()
 import uuid
@@ -85,13 +90,7 @@ def process_element(element):
     return markdown
 
 
-def scrap_website(account_id, knowledge_source, user_id):
-    final_links = []
-
-    # Create a session object
-    session = requests.Session()
-    # Set the maximum number of redirects allowed for this session
-    session.max_redirects = 50
+def scrap_website(account_id, knowledge_source, user_id, max_crawl_depth: int = 1, max_crawl_page: int = 1, dynamic_wait: int = 5):
     print("inside scrap data")
     embedding_id = f"{str(account_id)}"
 
@@ -120,77 +119,50 @@ def scrap_website(account_id, knowledge_source, user_id):
 
     try:
         url = knowledge_source  # Replace with the actual URL
-
-        # need to get all url using crawlies
-        final_links = find_all_urls(url)  # we need to call this function to get the urls from sitemaps
-        print("=================final_links==================", len(final_links))
-        if len(final_links) == 0:
-            final_links = [url]
-
-        for _logs in final_links:
+        crawl_result = firecrawl_app.crawl_url(
+            url, 
+            limit=max_crawl_page,
+            max_depth=max_crawl_depth,
+            scrape_options=ScrapeOptions(
+                formats=['markdown'],
+                maxAge=3600000  # Use cached data if less than 1 hour old
+            )
+        )
+        for page in crawl_result.data:
+            url = page.metadata['url']
+            metadata = page.metadata
+            content_data = page.markdown
             generate_logs = {
                 "rag_id": account_id,
                 "created_at": datetime.now(),
-                "link": _logs,
+                "link": url,
                 "page_content": "",
                 "status": "INPROGRESS"
             }
             save_website_scrapper_logs(data=generate_logs)
-
-        total_count = len(final_links)
-        success_links = len(final_links)
-        for _link in final_links:
-            try:
-                print("Loader completed", total_count)
-                content_data = None
-                metadata = None
-                if content_data is None:
-                    content_data = ""
-                    text_data, metadata, markdown_content = clean_and_extract_content(url=_link)
-                    for _text in text_data:
-                        text = _text['page_title'] + "\n\n" + _text['title'] + "\n\n"
-                        if "content" in _text:
-                            for inner_content in _text['content']:
-                                text = text + "\n" + inner_content['text']
-                        else:
-                            pass
-
-                        if content_data == "":
-                            content_data = text
-                        else:
-                            content_data = content_data + "\n" + text
-                # Remove extra spaces
-                cleaned_string = ' '.join(content_data.split())
-                total_count -= 1
-                p_uuid = str(uuid.uuid4())
-                if cleaned_string != "":
-                    # Clean the text content
-                    cleaned_doc = Document(page_content=cleaned_string, metadata=metadata)
-                    # Split the cleaned text into chunks
-                    text_chunks = text_splitter.split_documents([cleaned_doc])
-                    QdrantVectorStore.from_documents(
-                        text_chunks,
-                        embeddings,
-                        ids=[p_uuid],
-                        url=qdrant_api_url,
-                        api_key=qdrant_api_key,
-                        prefer_grpc=True,
-                        collection_name=embedding_id,
-                        force_recreate=False,
-                    )
-                    print(f"data stored in qdrant {embedding_id}")
-
-                    update_logs = {
-                        "rag_id": account_id,
-                        "link": _link,
-                        "page_content": cleaned_string,
-                        "status": "SUCCESS"
-                    }
-                    update_website_scrapper_logs(data=update_logs)
-
-            except Exception as e:
-                print("reason", e)
-                success_links -= 1
+            print("Loader completed")
+            p_uuid = str(uuid.uuid4())
+            cleaned_doc = Document(page_content=content_data, metadata=metadata)
+            # Split the cleaned text into chunks
+            text_chunks = text_splitter.split_documents([cleaned_doc])
+            QdrantVectorStore.from_documents(
+                text_chunks,
+                embeddings,
+                ids=[p_uuid],
+                url=qdrant_api_url,
+                api_key=qdrant_api_key,
+                prefer_grpc=True,
+                collection_name=embedding_id,
+                force_recreate=False,
+            )
+            print(f"data stored in qdrant {embedding_id}")
+            update_logs = {
+                "rag_id": account_id,
+                "link": url,
+                "page_content": url,
+                "status": "SUCCESS"
+            }
+            update_website_scrapper_logs(data=update_logs)
     except Exception as e:
         print("e", e)
 

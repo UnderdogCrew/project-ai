@@ -22,17 +22,17 @@ class CreateManageDataSchema(BaseModel):
     files: Optional[List[str]] = Field(default=None, description="List of files to process")
     website_url: Optional[str] = Field(default=None, description="URL of the website to crawl")
     max_crawl_page: Optional[int] = Field(
-        default=None,
+        default=1,
         ge=1,
         description="Maximum number of pages to crawl"
     )
     max_crawl_depth: Optional[int] = Field(
-        default=None,
+        default=1,
         ge=1,
         description="Maximum depth for web crawling"
     )
     dynamic_wait: Optional[int] = Field(
-        default=None,
+        default=5,
         ge=0,
         description="Wait time in seconds for dynamic content loading"
     )

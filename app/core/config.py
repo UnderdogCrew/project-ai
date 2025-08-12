@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     SENDGRID_API_KEY: str = os.environ.get("SENDGRID_API_KEY")
     SENDGRID_FROM_EMAIL: str = "hello@theunderdogcrew.com"
     ADMIN_EMAIL: str = "hello@theunderdogcrew.com"
+    FIRECRAWL_API_KEY: str = os.environ.get("FIRECRAWL_API_KEY")
 
 
     
