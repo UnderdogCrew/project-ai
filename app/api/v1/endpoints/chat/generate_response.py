@@ -17,7 +17,7 @@ from langchain_openai import OpenAIEmbeddings
 from phi.agent import Agent
 from phi.tools.email import EmailTools
 from phi.tools.googlesearch import GoogleSearch
-from phi.tools.crawl4ai_tools import Crawl4aiTools
+# from phi.tools.crawl4ai_tools import Crawl4aiTools
 from phi.tools.serpapi_tools import SerpApiTools
 from phi.tools.resend_tools import ResendTools
 from phi.tools.zendesk import ZendeskTools
@@ -41,7 +41,7 @@ tools_list = {
     "send_email": EmailTools,
     "perplexity_search": PerplexityTools,
     "google_search": GoogleSearch,
-    "crawl4ai_tools": Crawl4aiTools,
+    # "crawl4ai_tools": Crawl4aiTools,
     "serp_api_tools": SerpApiTools,
     "resend": ResendTools,
     "zendesk": ZendeskTools,
