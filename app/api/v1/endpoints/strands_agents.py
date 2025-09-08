@@ -8,7 +8,6 @@ from app.core.config import settings
 from pymongo import MongoClient
 from starlette.responses import JSONResponse
 from app.schemas.strands_agents import GenerateAgentChatSchema
-from app.api.v1.endpoints.chat.db_helper import save_doc_request
 from app.api.v1.endpoints.chat.generate_response_strands import generate_rag_response_strands, generate_rag_response_strands_streaming_v2
 from limiter import limiter
 from fastapi.responses import StreamingResponse
@@ -33,7 +32,6 @@ async def generate_data_strands(
     ):
     print("Api called for generate the response")
     user_id = user_data['email']
-    _ = save_doc_request(db=db, data=body)
     print("Request data saved in database")
     response_id = str(ObjectId())
 

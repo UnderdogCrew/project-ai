@@ -1088,25 +1088,6 @@ def main():
 
     asyncio.run(handle_stream())
 
-def save_doc_request(db: Session, data):
-    '''
-        Saves a new AI-generated e-commerce product description to the database.
-
-        This function creates a new instance of the `EcommerceProductDescription` model with
-        data extracted from the provided `GenerateSchema` object. The function then saves this
-        new e-commerce product description to the database and refreshes the instance to ensure
-        it is up-to-date with any database-triggered changes, such as default values or
-        auto-generated IDs.
-    '''
-    db_document_data = DocumentQuery(
-        text=data.message,
-        type=1
-    )
-    db.add(db_document_data)
-    db.commit()
-    db.refresh(db_document_data)
-    return db_document_data
-
 def get_response_by_id(response_id):
     query = {
         "response_id": response_id
