@@ -9,7 +9,6 @@ from pymongo import MongoClient
 from starlette.responses import JSONResponse
 from app.schemas.strands_agents import GenerateAgentChatSchema
 from app.api.v1.endpoints.chat.generate_response_strands import generate_rag_response_strands, generate_rag_response_strands_streaming_v2
-from limiter import limiter
 from fastapi.responses import StreamingResponse
 from bson import ObjectId
 from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
