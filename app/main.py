@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.v1.endpoints import agent_environment, rag, data_management, whatsapp_msg, agent, profile, file_upload, agent_app, dashboard, subscription, contact_us, image_generation
+from app.api.v1.endpoints import agent_environment, rag, data_management, whatsapp_msg, agent, profile, file_upload, agent_app, dashboard, subscription, contact_us, image_generation, strands_agents
 from app.api.v1.endpoints.chat import agent_chat
 from app.core.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
@@ -33,6 +33,7 @@ app.include_router(dashboard.router, prefix=f"{settings.API_V1_STR}/dashboard", 
 app.include_router(contact_us.router, prefix=f"{settings.API_V1_STR}/contact", tags=["contact"])
 app.include_router(subscription.router, prefix=f"{settings.API_V1_STR}/subscription", tags=["subscription"])
 app.include_router(image_generation.router, prefix=f"{settings.API_V1_STR}/image", tags=["image-generation"])
+app.include_router(strands_agents.router, prefix=f"{settings.API_V1_STR}/strands-agents", tags=["strands-agents"])
 
 
 @app.on_event("startup")

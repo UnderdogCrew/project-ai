@@ -194,3 +194,13 @@ def update_user_credit(query,update_data):
     result = db[settings.MONGODB_COLLECTION_USER].update_one(query,{"$set":{"credit":update_data['credit']}})
     client.close()
     return str(result.modified_count)
+
+
+def fetch_rag_data(search_query, skip, limit):
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
+    db = client[settings.MONGODB_DB_NAME]
+    collection = db[settings.MONGODB_COLLECTION_RAG_CONFIGS]  # Accessing the 'ragData' collection from the MongoDB instance
+    document = collection.find(search_query).sort([("_id", -1)]).skip(int(skip)).limit(int(limit))
+    # Querying the collection using the search query, sorting by descending order of _id, and applying skip and limit
+    client.close()
+    return document  # Returning the query result
