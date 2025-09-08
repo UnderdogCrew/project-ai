@@ -13,7 +13,7 @@ from app.api.v1.endpoints.chat.db_helper import (get_agent_data as fetch_ai_agen
 from bson import ObjectId
 import requests
 
-from strands_agents.tools import EmailTools, PerplexityTools, GoogleSearch, Crawl4aiTools, SerpApiTools, ResendTools, ZendeskTools, YouTubeTools, WikipediaTools, YFinanceTools, ApifyTools, DuckDuckGo, FirecrawlTools, TavilyTools, PdfTools, HunterApiTools, ZeroBounceApiTools, ProspeoApiTools, ScrapIoApiTools, GoogleMapTools, YelpTools
+from strands_agents.tools import EmailTools, PerplexityTools, GoogleSearch, Crawl4aiTools, SerpApiTools, ResendTools, ZendeskTools, YouTubeTools, WikipediaTools, YFinanceTools, ApifyTools, DuckDuckGo, FirecrawlTools, TavilyTools, HunterApiTools, ZeroBounceApiTools, ProspeoApiTools, ScrapIoApiTools, GoogleMapTools, YelpTools
 from strands_agents.utils.struct_op import create_dynamic_model
 
 from app.api.v1.endpoints.chat.db_helper import fetch_manage_data, save_ai_request, fetch_rag_data
@@ -90,7 +90,7 @@ tools_list = {
     "duckduckgo": DuckDuckGo,
     "fire_crawl": FirecrawlTools,
     "tavily": TavilyTools,
-    "pdf_tools": PdfTools,
+    # "pdf_tools": PdfTools,
     "hunter_tool": HunterApiTools,
     "zero_bounce_tool": ZeroBounceApiTools,
     "pros_peo_tool": ProspeoApiTools,
