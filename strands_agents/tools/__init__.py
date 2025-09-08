@@ -6,7 +6,6 @@ from strands_agents.tools.firecrawlTool import FirecrawlTools
 from strands_agents.tools.google_maps import GoogleMapTools
 from strands_agents.tools.googlesearchTool import GoogleSearch
 from strands_agents.tools.hunter import HunterApiTools
-from strands_agents.tools.pdf_extractor import PdfTools
 from strands_agents.tools.perplexity_tool import PerplexityTools
 from strands_agents.tools.prospeo import ProspeoApiTools
 from strands_agents.tools.resend_tools import ResendTools
