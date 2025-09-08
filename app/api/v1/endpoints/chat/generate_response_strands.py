@@ -122,7 +122,6 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_TOKEN
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-os.environ["PGVECTOR_CONNECTION_STRING"] = CONNECTION_STRING
 os.environ['AUTOGEN_USE_DOCKER'] = "no"
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 mistral_api_key = os.getenv("mistral_api_key")
