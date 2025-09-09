@@ -358,7 +358,7 @@ async def generate_rag_response_strands(
         name = gpt_details['name']
         print(f"[DEBUG] Agent name: {name}")
 
-        agent_features = gpt_details['features']
+        agent_features = agent_environment['features'] if "features" in agent_environment else []
         additional_instruction = gpt_details['additional_instruction']
         system_prompt = gpt_details['system_prompt']
         model_vendor_client_id = gpt_details['modelVendorClientId']
@@ -969,7 +969,7 @@ async def generate_rag_response_strands_streaming_v2(
         }
 
         print(f"[DEBUG] Saving AI request data: {data}")
-        save_ai_request(data=data)
+        save_ai_request(request_data=data)
 
         if webhooks:
             print("[DEBUG] Sending webhook notifications...")
