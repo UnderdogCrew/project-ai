@@ -495,7 +495,7 @@ async def generate_rag_response_strands(
         print(f"[DEBUG] formatted_message: {formatted_message[:200]}...")
 
         print("[DEBUG] Getting Strands model...")
-        model = llm_config.get('model', 'gpt-5-nano')
+        model = get_strands_model(model_vendor_client_id=1, llm_config=llm_config)
         print(f"[DEBUG] model: {model}")
 
         initial_messages = []
