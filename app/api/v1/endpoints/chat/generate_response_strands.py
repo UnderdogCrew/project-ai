@@ -606,7 +606,7 @@ async def generate_rag_response_strands(
         }
 
         print(f"[DEBUG] Saving AI request data: {data}")
-        save_ai_request(data=data)
+        save_ai_request(request_data=data)
 
         if webhooks:
             print("[DEBUG] Sending webhook notifications...")
@@ -657,7 +657,7 @@ async def generate_rag_response_strands(
                     "input_token_count": len(request.message)
                 }
                 print(f"[DEBUG] Saving error data: {data}")
-                save_ai_request(data=data)
+                save_ai_request(request_data=data)
 
             return {"text": f"An unexpected error occurred: {str(e)}"}
 
@@ -708,12 +708,22 @@ async def generate_rag_response_strands_streaming_v2(
             return
 
         gpt_details = gpt_data
+
+        agent_environment = get_environment_data(env_id=gpt_data['environment'])
         name = gpt_details['name']
         print(f"[DEBUG] Agent name: {name}")
 
-        tools = gpt_details['tools']
-        agent_features = gpt_details['features']
-        functions = gpt_details.get('functions', [])
+        agent_tools = agent_environment['tools']
+        tools = []
+        for tool in agent_tools:
+            tools.append(
+                {
+                    "name": tool['apiName'],
+                    "config": tool['config']
+                }
+            )
+        agent_features = agent_environment['features'] if "features" in agent_environment else []
+        functions = agent_environment.get('functions', [])
         llm_config = gpt_details['llm_config']
         additional_instruction = gpt_details['additional_instruction']
         system_prompt = gpt_details['system_prompt']
@@ -745,9 +755,9 @@ async def generate_rag_response_strands_streaming_v2(
         rag_context = ""
         rag_id = ""
         print("[DEBUG] Checking for RAG feature...")
-        for feat in agent_features:
+        for feat in agent_environment['features']:
             if feat.get('type_value') == 3:
-                rag_id = feat['config']['lyzr_rag']['rag_id']
+                rag_id = feat['config']['rag_id']
                 print(f"[DEBUG] Found RAG feature, rag_id: {rag_id}")
                 break
 
@@ -1012,7 +1022,7 @@ async def generate_rag_response_strands_streaming_v2(
                     "input_token_count": len(request.message)
                 }
                 print(f"[DEBUG] Saving error data: {data}")
-                save_ai_request(data=data)
+                save_ai_request(request_data=data)
 
             yield f"data:An unexpected error occurred: {str(e)}\n\n"
 
