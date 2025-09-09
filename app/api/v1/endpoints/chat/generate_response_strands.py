@@ -630,9 +630,6 @@ async def generate_rag_response_strands(
             print("[ERROR] Unexpected error, saving to DB if possible")
             if gpt_data:
                 data = {
-                    "client_id": gpt_data['account_id'],
-                    "account_id": gpt_data['account_id'],
-                    "project_id": gpt_data['project_id'],
                     "message": request.message,
                     "project_type": 1,
                     "request_id": 1,
@@ -988,9 +985,6 @@ async def generate_rag_response_strands_streaming_v2(
             print("[ERROR] Unexpected error, saving to DB if possible")
             if gpt_data:
                 data = {
-                    "client_id": gpt_data['account_id'],
-                    "account_id": gpt_data['account_id'],
-                    "project_id": gpt_data['project_id'],
                     "message": request.message,
                     "project_type": 1,
                     "request_id": 1,
