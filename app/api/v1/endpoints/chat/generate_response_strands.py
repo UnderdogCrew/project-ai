@@ -711,11 +711,10 @@ async def generate_rag_response_strands_streaming_v2(
             )
         agent_features = agent_environment['features'] if "features" in agent_environment else []
         functions = agent_environment.get('functions', [])
-        llm_config = gpt_details['llm_config']
-        additional_instruction = gpt_details['additional_instruction']
+        llm_config = agent_environment['llm_config']
+        additional_instruction = gpt_details['instructions']
         system_prompt = gpt_details['system_prompt']
-        model_vendor_client_id = gpt_details['modelVendorClientId']
-        webhooks = gpt_details.get('webhooks', [])
+        model_vendor_client_id = 1
         is_structured_output = llm_config.get('is_structured_output', False)
         print(f'[DEBUG]structured_ot: {gpt_details.get("is_structured_output", False)}')
         print(f"[DEBUG] is_structured_output: {is_structured_output}")
@@ -724,7 +723,7 @@ async def generate_rag_response_strands_streaming_v2(
             structured_output = gpt_details.get('structured_output', [])
             response_model = create_dynamic_model(structured_output)
 
-        print(f"[DEBUG] tools: {tools}, agent_features: {agent_features}, llm_config: {llm_config}, additional_instruction: {additional_instruction}, system_prompt: {system_prompt}, model_vendor_client_id: {model_vendor_client_id}, webhooks: {webhooks}")
+        print(f"[DEBUG] tools: {tools}, agent_features: {agent_features}, llm_config: {llm_config}, additional_instruction: {additional_instruction}, system_prompt: {system_prompt}, model_vendor_client_id: {model_vendor_client_id}")
 
         is_humanizer_present = any(obj.get("type") == "HUMANIZER" for obj in agent_features)
         is_reflective_present = any(obj.get("type") == "REFLECTION" for obj in agent_features)
@@ -754,7 +753,7 @@ async def generate_rag_response_strands_streaming_v2(
                 query = {"rag_id": rag_id}
                 manage_data = fetch_manage_data(search_query=query, skip=0, limit=1)
                 rag_data = fetch_rag_data({"_id": ObjectId(rag_id)}, 0, 1)
-                rag_id = str(manage_data[0]['_id'])
+                rag_id = str(manage_data['_id'])
                 rag_data = list(rag_data)[0]
                 top_k = rag_data.get('top_k_similarity', 3)
                 rag_model = rag_data.get('embedding_model', 'text-embedding-ada-002')
@@ -848,7 +847,7 @@ async def generate_rag_response_strands_streaming_v2(
         print(f"[DEBUG] formatted_message: {formatted_message[:200]}...")
 
         print("[DEBUG] Getting Strands model...")
-        model = get_strands_model(model_vendor_client_id, llm_config)
+        model = get_strands_model(model_vendor_client_id=1, llm_config=llm_config)
         print(f"[DEBUG] model: {model}")
 
         initial_messages = []
@@ -947,9 +946,6 @@ async def generate_rag_response_strands_streaming_v2(
                 response_text = f"Responsible AI check error: {str(e)}"
 
         data = {
-            "client_id": gpt_details['account_id'],
-            "account_id": gpt_details['account_id'],
-            "project_id": gpt_details['project_id'],
             "message": request.message,
             "project_type": 1,
             "request_id": 1,
@@ -968,11 +964,6 @@ async def generate_rag_response_strands_streaming_v2(
         print(f"[DEBUG] Saving AI request data: {data}")
         save_ai_request(request_data=data)
 
-        if webhooks:
-            print("[DEBUG] Sending webhook notifications...")
-            for webhook in webhooks:
-                send_webhook_notification(webhook, response_text, response_id)
-
         total_duration = time.time() - function_start_time
         print(f"[DEBUG] Total execution time: {total_duration:.2f} seconds")
         print("[DEBUG] Returning final response")
@@ -987,9 +978,6 @@ async def generate_rag_response_strands_streaming_v2(
 
         if "insufficient_quota" in error_message or "quota exceeded" in error_message:
             print("[ERROR] API credit limit exceeded")
-            if webhooks:
-                for webhook in webhooks:
-                    send_webhook_notification(webhook, "API credit limit exceeded. Please check your account balance.", response_id)
         else:
             print("[ERROR] Unexpected error, saving to DB if possible")
             if gpt_data:
