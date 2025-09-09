@@ -585,9 +585,6 @@ async def generate_rag_response_strands(
 
 
         data = {
-            "client_id": gpt_details['account_id'],
-            "account_id": gpt_details['account_id'],
-            "project_id": gpt_details['project_id'],
             "message": request.message,
             "project_type": 1,
             "request_id": 1,
