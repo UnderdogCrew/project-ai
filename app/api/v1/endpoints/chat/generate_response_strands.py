@@ -603,11 +603,6 @@ async def generate_rag_response_strands(
         print(f"[DEBUG] Saving AI request data: {data}")
         save_ai_request(request_data=data)
 
-        if webhooks:
-            print("[DEBUG] Sending webhook notifications...")
-            for webhook in webhooks:
-                send_webhook_notification(webhook, response_text, response_id)
-
         total_duration = time.time() - function_start_time
         print(f"[DEBUG] Total execution time: {total_duration:.2f} seconds")
         print("[DEBUG] Returning response")
@@ -623,9 +618,6 @@ async def generate_rag_response_strands(
 
         if "insufficient_quota" in error_message or "quota exceeded" in error_message:
             print("[ERROR] API credit limit exceeded")
-            if webhooks:
-                for webhook in webhooks:
-                    send_webhook_notification(webhook, "API credit limit exceeded. Please check your account balance.", response_id)
             return {"error": "API credit limit exceeded. Please check your account balance.", "status_code": 402}
         elif "rate limit" in error_message:
             print("[ERROR] Rate limit exceeded")
