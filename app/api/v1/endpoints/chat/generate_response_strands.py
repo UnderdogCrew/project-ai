@@ -8,7 +8,7 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 import os
 
 from datetime import datetime
-from app.api.v1.endpoints.chat.db_helper import (get_agent_data as fetch_ai_agent_data, fetch_ai_requests_data)
+from app.api.v1.endpoints.chat.db_helper import (get_agent_data as fetch_ai_agent_data, fetch_ai_requests_data, get_environment_data)
 
 from bson import ObjectId
 import requests
@@ -341,12 +341,24 @@ async def generate_rag_response_strands(
             return {"message": "No agent data found", "status_code": 404}
 
         gpt_details = gpt_data
+
+        agent_environment = get_environment_data(env_id=gpt_data['environment'])
+
+        agent_tools = agent_environment['tools']
+        tools = []
+        for tool in agent_tools:
+            tools.append(
+                {
+                    "name": tool['apiName'],
+                    "config": tool['config']
+                }
+            )
+        llm_config = agent_environment['llm_config']
+
         name = gpt_details['name']
         print(f"[DEBUG] Agent name: {name}")
 
-        tools = gpt_details['tools']
         agent_features = gpt_details['features']
-        llm_config = gpt_details['llm_config']
         additional_instruction = gpt_details['additional_instruction']
         system_prompt = gpt_details['system_prompt']
         model_vendor_client_id = gpt_details['modelVendorClientId']
@@ -373,16 +385,16 @@ async def generate_rag_response_strands(
         print(f"[DEBUG] config_tools: {config_tools}")
 
         message = request.message
-
-        rag_context = ""
+        
+        # Initialize variables for RAG (Retrieval-Augmented Generation)
         rag_id = ""
-        print("[DEBUG] Checking for RAG feature...")
-        for feat in agent_features:
-            if feat.get('type_value') == 3:
-                rag_id = feat['config']['lyzr_rag']['rag_id']
+        rag_context = ""
+        for feat in agent_environment['features']:
+            if feat['type_value'] == 3:
+                rag_id = feat['config']['rag_id']
                 print(f"[DEBUG] Found RAG feature, rag_id: {rag_id}")
                 break
-
+        
         if rag_id:
             try:
                 print("[DEBUG] Fetching manage data for RAG...")
