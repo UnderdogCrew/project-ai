@@ -359,10 +359,8 @@ async def generate_rag_response_strands(
         print(f"[DEBUG] Agent name: {name}")
 
         agent_features = agent_environment['features'] if "features" in agent_environment else []
-        additional_instruction = gpt_details['additional_instruction']
+        additional_instruction = gpt_details['instructions']
         system_prompt = gpt_details['system_prompt']
-        model_vendor_client_id = gpt_details['modelVendorClientId']
-        webhooks = gpt_details.get('webhooks', [])
         is_structured_output = llm_config.get('is_structured_output', False)
         print(f'[DEBUG]structured_ot: {gpt_details.get("is_structured_output", False)}')
         print(f"[DEBUG] is_structured_output: {is_structured_output}")
@@ -371,7 +369,7 @@ async def generate_rag_response_strands(
             response_model = create_dynamic_model(structured_output)
 
 
-        print(f"[DEBUG] tools: {tools}, agent_features: {agent_features}, llm_config: {llm_config}, additional_instruction: {additional_instruction}, system_prompt: {system_prompt}, model_vendor_client_id: {model_vendor_client_id}, webhooks: {webhooks}")
+        print(f"[DEBUG] tools: {tools}, agent_features: {agent_features}, llm_config: {llm_config}, additional_instruction: {additional_instruction}, system_prompt: {system_prompt}")
 
         is_humanizer_present = any(obj.get("type") == "HUMANIZER" for obj in agent_features)
         is_reflective_present = any(obj.get("type") == "REFLECTION" for obj in agent_features)
@@ -401,7 +399,7 @@ async def generate_rag_response_strands(
                 query = {"rag_id": rag_id}
                 manage_data = fetch_manage_data(search_query=query, skip=0, limit=1)
                 rag_data = fetch_rag_data({"_id": ObjectId(rag_id)}, 0, 1)
-                rag_id = str(manage_data[0]['_id'])
+                rag_id = str(manage_data['_id'])
                 rag_data = list(rag_data)[0]
                 top_k = rag_data.get('top_k_similarity', 3)
                 print(rag_data)
@@ -497,7 +495,7 @@ async def generate_rag_response_strands(
         print(f"[DEBUG] formatted_message: {formatted_message[:200]}...")
 
         print("[DEBUG] Getting Strands model...")
-        model = get_strands_model(model_vendor_client_id, llm_config)
+        model = llm_config.get('model', 'gpt-5-nano')
         print(f"[DEBUG] model: {model}")
 
         initial_messages = []
