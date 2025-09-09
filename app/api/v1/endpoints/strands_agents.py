@@ -30,7 +30,7 @@ async def generate_data_strands(
         user_data: GuestTokenResp = Depends(decode_jwt_token)
     ):
     print("Api called for generate the response")
-    user_id = user_data['email']
+    user_id = user_data['email'] if user_data else None
     print("Request data saved in database")
     response_id = str(ObjectId())
 
