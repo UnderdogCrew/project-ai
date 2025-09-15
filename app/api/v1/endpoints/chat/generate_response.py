@@ -34,6 +34,7 @@ from phi.tools.firecrawl import FirecrawlTools
 from phi.tools.tavily import TavilyTools
 # from phi.tools.pdf_extractor import PdfTools
 from phi.knowledge.website import WebsiteKnowledgeBase
+from phi.tools.postgres_sql import PostgresSql
 
 from app.api.v1.endpoints.chat.db_helper import fetch_manage_data, save_ai_request
 
@@ -52,6 +53,7 @@ tools_list = {
     "duckduckgo": DuckDuckGo,
     "fire_crawl": FirecrawlTools,
     "tavily": TavilyTools,
+    "postgres_sql": PostgresSql,
     # "pdf_tools": PdfTools
 }
 import tiktoken
@@ -252,6 +254,11 @@ def create_tool(tool_config):
             return tool_class(
                 api_key=config.get('key'),  # Resend API authentication key
                 from_email=config.get('from_email')  # Default sender email address
+            )
+        elif tool_name == "postgres_sql":
+            # Postgres SQL tool configuration
+            return tool_class(
+                db_url=config.get('db_url')  # Postgres SQL database URL
             )
     else:
         raise ValueError(f"Tool '{tool_name}' not found in tools_list")  # Raise an error if tool not found
