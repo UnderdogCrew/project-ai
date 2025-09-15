@@ -42,7 +42,6 @@ class PostgresSql(Toolkit):
         query = _safe_sql(query)
         print(query)
         q = query
-        print(q)
         if q.startswith("Error:"):
             return q
         try:
