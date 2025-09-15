@@ -117,9 +117,11 @@ async def update_environment(
         update_doc["connecttion_string"] = update_doc["connecttion_string"]
         db = SQLDatabase.from_uri(update_doc["connecttion_string"])
         SCHEMA = db.get_table_info()
+        print(SCHEMA)
         update_doc["schema"] = SCHEMA
     else:
         update_doc["schema"] = None
+    print(update_doc)
 
     result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_STUDIO].find_one_and_update(
         {"_id": ObjectId(payload.environment_id)},
