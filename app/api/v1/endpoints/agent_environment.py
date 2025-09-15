@@ -11,6 +11,7 @@ from app.core.config import settings
 from typing import List
 from bson import ObjectId
 from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
+from langchain_community.utilities import SQLDatabase
 
 router = APIRouter()
 
@@ -26,6 +27,15 @@ async def create_environment(
         # Create a single document containing both environment and agents
         document = config.model_dump()
         document["user_id"] = user_id
+
+        if document["data_sources"] == 1:
+            document["connecttion_string"] = document["connecttion_string"]
+            db = SQLDatabase.from_uri(document["connecttion_string"])
+            SCHEMA = db.get_table_info()
+            document["schema"] = SCHEMA
+        else:
+            document["schema"] = None
+
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_STUDIO].insert_one(document)
 
         return EnvironmentResponse(
@@ -33,7 +43,9 @@ async def create_environment(
             name=document["name"],
             features=document["features"],
             tools=document["tools"],
-            llm_config=document["llm_config"]
+            llm_config=document["llm_config"],
+            data_sources=document["data_sources"],
+            connecttion_string=document["connecttion_string"]
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -75,7 +87,9 @@ async def list_environments(
                     name=studio["name"],
                     features=studio["features"],
                     tools=studio["tools"],
-                    llm_config=studio["llm_config"]
+                    llm_config=studio["llm_config"],
+                    data_sources=studio["data_sources"] if "data_sources" in studio else 0,
+                    connecttion_string=studio["connecttion_string"] if "connecttion_string" in studio else None,
                 )
                 for studio in studios
             ]
@@ -99,6 +113,14 @@ async def update_environment(
         if not update_doc:
             raise HTTPException(status_code=400, detail="No update data provided")
 
+        if update_doc["data_sources"] == 1:
+            update_doc["connecttion_string"] = update_doc["connecttion_string"]
+            db = SQLDatabase.from_uri(update_doc["connecttion_string"])
+            SCHEMA = db.get_table_info()
+            update_doc["schema"] = SCHEMA
+        else:
+            update_doc["schema"] = None
+
         result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_STUDIO].find_one_and_update(
             {"_id": ObjectId(payload.environment_id)},
             {"$set": update_doc},
@@ -113,7 +135,9 @@ async def update_environment(
             name=result["name"],
             features=result["features"],
             tools=result["tools"],
-            llm_config=result["llm_config"]
+            llm_config=result["llm_config"],
+            data_sources=result["data_sources"] if "data_sources" in result else 0,
+            connecttion_string=result["connecttion_string"] if "connecttion_string" in result else None
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -13,6 +13,8 @@ class EnvironmentConfig(BaseModel):
     features: List[dict] = []
     tools: List[dict] = []
     llm_config: LLMConfig
+    data_sources: Optional[int] = 0
+    connecttion_string: Optional[str] = None
 
 
 class EnvironmentResponse(BaseModel):
@@ -34,6 +36,8 @@ class EnvironmentUpdatePayload(BaseModel):
     features: Optional[List[dict]] = None
     tools: Optional[List[dict]] = None
     llm_config: Optional[LLMConfig] = None
+    data_sources: Optional[int] = 0
+    connecttion_string: Optional[str] = None
 
 
 class AgentConfig(BaseModel):
