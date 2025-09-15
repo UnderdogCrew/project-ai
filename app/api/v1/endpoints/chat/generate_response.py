@@ -282,6 +282,7 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         llm_config = agent_environment['llm_config']
         prompt = gpt_data['system_prompt']
         additional_instructions = gpt_data['instructions']
+        schema = agent_environment.get('schema', None)
 
         # need to fetch the history from database
         history_query = {
@@ -350,6 +351,8 @@ def generate_rag_response(request: GenerateAgentChatSchema, response_id: str = N
         print(f"urls: {urls}")
         # Format the system prompt based on the schema or message
         formatted_template = message
+        if schema:
+            prompt = f"{prompt}\n\n Context: {schema}"
 
         # Create tools based on the configuration
         config_tools = [create_tool(config) for config in tools if config['name'] in tools_list]

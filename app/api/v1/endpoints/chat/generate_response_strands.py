@@ -361,6 +361,7 @@ async def generate_rag_response_strands(
         agent_features = agent_environment['features'] if "features" in agent_environment else []
         additional_instruction = gpt_details['instructions']
         system_prompt = gpt_details['system_prompt']
+        schema = agent_environment.get('schema', None)
         is_structured_output = llm_config.get('is_structured_output', False)
         print(f'[DEBUG]structured_ot: {gpt_details.get("is_structured_output", False)}')
         print(f"[DEBUG] is_structured_output: {is_structured_output}")
@@ -468,6 +469,8 @@ async def generate_rag_response_strands(
         print("[DEBUG] Building system prompt...")
         if rag_context:
             system_prompt = f"{system_prompt}\n\nContext: {rag_context}"
+        if schema:
+            system_prompt = f"{system_prompt}\n\n{schema}"
         if additional_instruction:
             system_prompt = f"{system_prompt}\n\n{additional_instruction}"
         if is_humanizer_present:
@@ -712,6 +715,7 @@ async def generate_rag_response_strands_streaming_v2(
         agent_features = agent_environment['features'] if "features" in agent_environment else []
         functions = agent_environment.get('functions', [])
         llm_config = agent_environment['llm_config']
+        schema = agent_environment.get('schema', None)
         additional_instruction = gpt_details['instructions']
         system_prompt = gpt_details['system_prompt']
         model_vendor_client_id = 1
@@ -818,6 +822,8 @@ async def generate_rag_response_strands_streaming_v2(
                 print(f"[ERROR] RAG context retrieval error: {e}")
 
         print("[DEBUG] Building system prompt...")
+        if schema and rag_id:
+            system_prompt = f"{system_prompt}\n\n{schema}"
         if rag_context:
             system_prompt = f"{system_prompt}\n\nContext: {rag_context}"
         if additional_instruction:
