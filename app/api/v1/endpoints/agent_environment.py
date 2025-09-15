@@ -104,43 +104,43 @@ async def update_environment(
         db: AsyncIOMotorClient = Depends(get_database),
         user_data: GuestTokenResp = Depends(decode_jwt_token)
 ):
-    try:
-        # Build update document based on provided fields
-        update_doc = {}
-        if payload.model_dump():
-            update_doc = payload.model_dump()
+    # try:
+    # Build update document based on provided fields
+    update_doc = {}
+    if payload.model_dump():
+        update_doc = payload.model_dump()
 
-        if not update_doc:
-            raise HTTPException(status_code=400, detail="No update data provided")
+    if not update_doc:
+        raise HTTPException(status_code=400, detail="No update data provided")
 
-        if update_doc["data_sources"] == 1:
-            update_doc["connecttion_string"] = update_doc["connecttion_string"]
-            db = SQLDatabase.from_uri(update_doc["connecttion_string"])
-            SCHEMA = db.get_table_info()
-            update_doc["schema"] = SCHEMA
-        else:
-            update_doc["schema"] = None
+    if update_doc["data_sources"] == 1:
+        update_doc["connecttion_string"] = update_doc["connecttion_string"]
+        db = SQLDatabase.from_uri(update_doc["connecttion_string"])
+        SCHEMA = db.get_table_info()
+        update_doc["schema"] = SCHEMA
+    else:
+        update_doc["schema"] = None
 
-        result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_STUDIO].find_one_and_update(
-            {"_id": ObjectId(payload.environment_id)},
-            {"$set": update_doc},
-            return_document=True
-        )
+    result = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_AGENT_STUDIO].find_one_and_update(
+        {"_id": ObjectId(payload.environment_id)},
+        {"$set": update_doc},
+        return_document=True
+    )
 
-        if not result:
-            raise HTTPException(status_code=404, detail="Environment not found")
+    if not result:
+        raise HTTPException(status_code=404, detail="Environment not found")
 
-        return EnvironmentResponse(
-            id=str(result["_id"]),
-            name=result["name"],
-            features=result["features"],
-            tools=result["tools"],
-            llm_config=result["llm_config"],
-            data_sources=result["data_sources"] if "data_sources" in result else 0,
-            connecttion_string=result["connecttion_string"] if "connecttion_string" in result else None
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return EnvironmentResponse(
+        id=str(result["_id"]),
+        name=result["name"],
+        features=result["features"],
+        tools=result["tools"],
+        llm_config=result["llm_config"],
+        data_sources=result["data_sources"] if "data_sources" in result else 0,
+        connecttion_string=result["connecttion_string"] if "connecttion_string" in result else None
+    )
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/{environment_id}", status_code=204)
