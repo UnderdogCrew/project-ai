@@ -29,12 +29,10 @@ def _safe_sql(q: str) -> str:
 class PostgresSql(Toolkit):
     def __init__(
         self,
-        host: str,
         db_url: str,
     ):
         super().__init__(name="postgres_sql")
 
-        self.host = host
         self.db_url = db_url
 
         self.register(self.execute_sql)
