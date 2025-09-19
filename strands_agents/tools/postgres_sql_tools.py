@@ -31,7 +31,7 @@ class PostgresSqlTools(Toolkit):
         self,
         db_url: str,
     ):
-        super().__init__(name="postgres_sql")
+        super().__init__()
 
         self.db_url = db_url
 
