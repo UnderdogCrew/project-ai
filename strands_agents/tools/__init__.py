@@ -19,3 +19,4 @@ from strands_agents.tools.youtube_tools import YouTubeTools
 from strands_agents.tools.zendesk import ZendeskTools
 from strands_agents.tools.zero_bounce import ZeroBounceApiTools
 from strands_agents.tools.toxicity_checker import check_toxicity
+from strands_agents.tools.postgres_sql_tools import PostgresSqlTools

@@ -37,8 +37,19 @@ async def generate_data_strands(
     stream = body.stream
     if stream:
         return StreamingResponse(
-            generate_rag_response_strands_streaming_v2(request=body, db=db, response_id=response_id, user_id=user_id), #, user_data=user_data),
+            generate_rag_response_strands_streaming_v2(
+                request=body,
+                db=db,
+                response_id=response_id,
+                user_id=user_id,
+            ), #, user_data=user_data),
             media_type='text/event-stream',
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream",
+                "Access-Control-Allow-Origin": "*",
+            },
         )
 
     response = await generate_rag_response_strands(request=body, db=db, response_id=response_id, user_id=user_id)

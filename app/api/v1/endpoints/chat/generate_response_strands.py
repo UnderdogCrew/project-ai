@@ -13,7 +13,7 @@ from app.api.v1.endpoints.chat.db_helper import (get_agent_data as fetch_ai_agen
 from bson import ObjectId
 import requests
 
-from strands_agents.tools import EmailTools, PerplexityTools, GoogleSearch, Crawl4aiTools, SerpApiTools, ResendTools, ZendeskTools, YouTubeTools, WikipediaTools, YFinanceTools, ApifyTools, DuckDuckGo, FirecrawlTools, TavilyTools, HunterApiTools, ZeroBounceApiTools, ProspeoApiTools, ScrapIoApiTools, GoogleMapTools, YelpTools
+from strands_agents.tools import EmailTools, PerplexityTools, GoogleSearch, Crawl4aiTools, SerpApiTools, ResendTools, ZendeskTools, YouTubeTools, WikipediaTools, YFinanceTools, ApifyTools, DuckDuckGo, FirecrawlTools, TavilyTools, HunterApiTools, ZeroBounceApiTools, ProspeoApiTools, ScrapIoApiTools, GoogleMapTools, YelpTools, PostgresSqlTools
 from strands_agents.utils.struct_op import create_dynamic_model
 
 from app.api.v1.endpoints.chat.db_helper import fetch_manage_data, save_ai_request, fetch_rag_data
@@ -96,7 +96,8 @@ tools_list = {
     "pros_peo_tool": ProspeoApiTools,
     "scrap_io_tool": ScrapIoApiTools,
     "google_maps": GoogleMapTools,
-    "yelp": YelpTools
+    "yelp": YelpTools,
+    "postgres_sql": PostgresSqlTools
 }
 
 env_path = join(dirname(__file__), 'env')
@@ -264,6 +265,10 @@ def create_tool(tool_config, user_id, url=None, method=None):
                 api_key=config.get('api_key'),
                 api_type=config.get('api_type')  
             )
+        elif tool_name == "postgres_sql":
+            return tool_class(
+                db_url=config.get('db_url')
+            )
     else:
         raise ValueError(f"Tool '{tool_name}' not found in tools_list")
 
@@ -374,10 +379,7 @@ async def generate_rag_response_strands(
 
         is_humanizer_present = any(obj.get("type") == "HUMANIZER" for obj in agent_features)
         is_reflective_present = any(obj.get("type") == "REFLECTION" for obj in agent_features)
-        responsible_ai = any(obj.get("type") == "RESPONSIBLE_AI" for obj in agent_features)
         is_memory_enable = any(obj.get('type') == 'MEMORY' for obj in agent_features)
-
-        print(f"RESPONSIBLEAI: {responsible_ai}")
 
         print("[DEBUG] Creating Strands tools...")
         config_tools = create_strands_tools(tools)
@@ -575,18 +577,6 @@ async def generate_rag_response_strands(
                 response_text = f"Structured output error: {str(e)}"
 
 
-        if responsible_ai:
-            print("[DEBUG] Applying Responsible AI checks...")
-            try:
-                if await check_toxicity(response_text):
-                    print(response_text)
-                    response_text = "The response contains nsfw content and has been filtered."
-                    print("[DEBUG] Toxic content detected, response filtered")
-            except Exception as e:
-                print(f"[ERROR] Responsible AI check error: {e}")
-                response_text = f"Responsible AI check error: {str(e)}"                
-
-
         data = {
             "message": request.message,
             "project_type": 1,
@@ -731,10 +721,7 @@ async def generate_rag_response_strands_streaming_v2(
 
         is_humanizer_present = any(obj.get("type") == "HUMANIZER" for obj in agent_features)
         is_reflective_present = any(obj.get("type") == "REFLECTION" for obj in agent_features)
-        responsible_ai = any(obj.get("type") == "RESPONSIBLE_AI" for obj in agent_features)
         is_memory_enable = any(obj.get('type') == 'MEMORY' for obj in agent_features)
-
-        print(f"RESPONSIBLEAI: {responsible_ai}")
 
         print("[DEBUG] Creating Strands tools...")
         config_tools = create_strands_tools(tools, user_id)
@@ -936,20 +923,6 @@ async def generate_rag_response_strands_streaming_v2(
 
         response_text = response_text.replace('json', "").replace('```', "")
         print(f"[DEBUG] Cleaned response_text: {response_text[:200]}...")
-
-        if responsible_ai:
-            yield "data:##Applying Responsible AI checks...\n\n"
-            
-            print("[DEBUG] Applying Responsible AI checks...")
-            try:
-                if await check_toxicity(response_text):
-                    print(response_text)
-                    response_text = "The response contains nsfw content and has been filtered."
-                    print("[DEBUG] Toxic content detected, response filtered")
-                    yield "data:The response contains nsfw content and has been filtered.\n\n"
-            except Exception as e:
-                print(f"[ERROR] Responsible AI check error: {e}")
-                response_text = f"Responsible AI check error: {str(e)}"
 
         data = {
             "message": request.message,
