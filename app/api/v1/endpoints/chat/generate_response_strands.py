@@ -643,9 +643,6 @@ async def generate_rag_response_strands(
 
     finally:
         print("[DEBUG] Strands RAG function completed")
-        if db:
-            print("[DEBUG] Closing DB connection")
-            db.close()
         if g:
             print("[DEBUG] Closing generator")
             g.close()
@@ -980,9 +977,6 @@ async def generate_rag_response_strands_streaming_v2(
 
     finally:
         print("[DEBUG] Strands RAG streaming function completed")
-        if db:
-            print("[DEBUG] Closing DB connection")
-            db.close()
         if g:
             print("[DEBUG] Closing generator")
             g.close()
