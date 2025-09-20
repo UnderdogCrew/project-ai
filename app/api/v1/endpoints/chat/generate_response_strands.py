@@ -878,7 +878,7 @@ async def generate_rag_response_strands_streaming_v2(
         
         async for event in agent.stream_async(formatted_message, callbacks=[ChainStreamHandler(g)]):
             if "data" in event and event["data"]:
-                yield f"data:{event['data']}\n\n"
+                yield f"{event['data']}\n\n"
                 await asyncio.sleep(0)
             if "result" in event and event["result"]:
                 response_text = event["result"].message.get("content", "")[0].get("text", "")
