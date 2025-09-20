@@ -959,24 +959,23 @@ async def generate_rag_response_strands_streaming_v2(
             print("[ERROR] API credit limit exceeded")
         else:
             print("[ERROR] Unexpected error, saving to DB if possible")
-            if gpt_data:
-                data = {
-                    "message": request.message,
-                    "project_type": 1,
-                    "request_id": 1,
-                    "response": f"An unexpected error occurred: {str(e)}",
-                    "session_id": request.session_id,
-                    "fingure_print_id": request.agent_id,
-                    "bot_id": request.agent_id,
-                    "image_data": None,
-                    "sources": None,
-                    "supported_ai_model_name": llm_config.get('model', 'unknown') if 'llm_config' in locals() else 'unknown',
-                    "response_id": response_id,
-                    "created_at": datetime.now(),
-                    "input_token_count": len(request.message)
-                }
-                print(f"[DEBUG] Saving error data: {data}")
-                save_ai_request(request_data=data)
+            data = {
+                "message": request.message,
+                "project_type": 1,
+                "request_id": 1,
+                "response": f"An unexpected error occurred: {str(e)}",
+                "session_id": request.session_id,
+                "fingure_print_id": request.agent_id,
+                "bot_id": request.agent_id,
+                "image_data": None,
+                "sources": None,
+                "supported_ai_model_name": llm_config.get('model', 'unknown') if 'llm_config' in locals() else 'unknown',
+                "response_id": response_id,
+                "created_at": datetime.now(),
+                "input_token_count": len(request.message)
+            }
+            print(f"[DEBUG] Saving error data: {data}")
+            save_ai_request(request_data=data)
 
             yield f"data:An unexpected error occurred: {str(e)}\n\n"
 
