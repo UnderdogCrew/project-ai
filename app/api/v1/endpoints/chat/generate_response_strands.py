@@ -877,11 +877,12 @@ async def generate_rag_response_strands_streaming_v2(
         print("[DEBUG] Starting agent response...")
         
         async for event in agent.stream_async(formatted_message, callbacks=[ChainStreamHandler(g)]):
-            if "data" in event and event["data"]:
-                yield f"{event['data']}\n\n"
-                await asyncio.sleep(0)
-            if "result" in event and event["result"]:
-                response_text = event["result"].message.get("content", "")[0].get("text", "")
+            # Check for content in the RunResponse object
+            if hasattr(event, 'content') and event.content:
+                yield f"data:{event.content}\n\n"
+            # Store the final response text for reflection/humanization
+            if hasattr(event, 'content') and event.content:
+                response_text = event.content
 
 
         if is_reflective_present:
@@ -891,11 +892,10 @@ async def generate_rag_response_strands_streaming_v2(
             reflection_prompt = f"Reflect on your response, and provide a more in depth, focused, and verbose response. RETURN ONLY THE NEW TEXT, NO CONFIRMATION TEXT LIKE SURE THING FOR THIS REPROMPT:\n {response_text}"
             
             async for event in agent.stream_async(reflection_prompt, callbacks=[ChainStreamHandler(g)]):
-                if "data" in event and event["data"]:
-                    yield f"data:{event['data']}\n\n"
-                    await asyncio.sleep(0)
-                if "result" in event and event["result"]:
-                    response_text = event["result"].message.get("content", "")[0].get("text", "")
+                if hasattr(event, 'content') and event.content:
+                    yield f"data:{event.content}\n\n"
+                if hasattr(event, 'content') and event.content:
+                    response_text = event.content
 
             print(f'After reflection: {response_text[:100]}...')
 
@@ -908,11 +908,10 @@ async def generate_rag_response_strands_streaming_v2(
             humanize_prompt = f"Convert this text to a more human-written-like format, using beginner friendly english terms and slags, explaining everything that you can, again, all in human like language, asking questions along the way like, following along? or does that make sense? RETURN ONLY THE NEW TEXT, NO CONFIRMATION TEXT LIKE SURE THING FOR THIS REPROMPT:\n{response_text}"
             
             async for event in agent.stream_async(humanize_prompt, callbacks=[ChainStreamHandler(g)]):
-                if "data" in event and event["data"]:
-                    yield f"data:{event['data']}\n\n"
-                    await asyncio.sleep(0)
-                if "result" in event and event["result"]:
-                    humanized_response = event["result"].message.get("content", "")[0].get("text", "")
+                if hasattr(event, 'content') and event.content:
+                    yield f"data:{event.content}\n\n"
+                if hasattr(event, 'content') and event.content:
+                    humanized_response = event.content
 
             
             response_text = humanized_response
