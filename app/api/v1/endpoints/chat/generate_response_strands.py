@@ -876,7 +876,7 @@ async def generate_rag_response_strands_streaming_v2(
         async for event in agent.stream_async(formatted_message, callbacks=[ChainStreamHandler(g)]):
             # Check for content in the RunResponse object
             if "data" in event and event["data"]:  # This will never be true
-                yield f"{event['data']}\n\n"
+                yield f"data:{event['data']}\n\n"
                 await asyncio.sleep(0)
             # Store the final response text for reflection/humanization
             if "result" in event and event["result"]:  # This will never be true either
@@ -891,7 +891,7 @@ async def generate_rag_response_strands_streaming_v2(
             
             async for event in agent.stream_async(reflection_prompt, callbacks=[ChainStreamHandler(g)]):
                 if "data" in event and event["data"]:  # This will never be true
-                    yield f"{event['data']}\n\n"
+                    yield f"data:{event['data']}\n\n"
                     await asyncio.sleep(0)
                 if "result" in event and event["result"]:  # This will never be true either
                     response_text = event["result"].message.get("content", "")[0].get("text", "")
@@ -908,7 +908,7 @@ async def generate_rag_response_strands_streaming_v2(
             
             async for event in agent.stream_async(humanize_prompt, callbacks=[ChainStreamHandler(g)]):
                 if "data" in event and event["data"]:  # This will never be true
-                    yield f"{event['data']}\n\n"
+                    yield f"data:{event['data']}\n\n"
                     await asyncio.sleep(0)
                 if "result" in event and event["result"]:  # This will never be true either
                     humanized_response = event["result"].message.get("content", "")[0].get("text", "")
