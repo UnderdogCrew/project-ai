@@ -872,6 +872,7 @@ async def generate_rag_response_strands_streaming_v2(
 
         agent_start_time = time.time()
         print("[DEBUG] Starting agent response...")
+        response_text = ""
         
         async for event in agent.stream_async(formatted_message, callbacks=[ChainStreamHandler(g)]):
             # Check for content in the RunResponse object
