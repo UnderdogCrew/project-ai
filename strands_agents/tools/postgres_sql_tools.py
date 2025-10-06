@@ -40,7 +40,8 @@ class PostgresSqlTools(Toolkit):
     def execute_sql(self, query: str) -> str:
         """Execute a READ-ONLY SQLite SELECT query and return results."""
         query = _safe_sql(query)
-        print(query)
+        print("--------------------------------")
+        print(f"query: {query}")
         q = query
         if q.startswith("Error:"):
             return q
