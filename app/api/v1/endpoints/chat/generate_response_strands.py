@@ -718,7 +718,7 @@ async def generate_rag_response_strands_streaming_v2(
 
         is_humanizer_present = any(obj.get("type") == "HUMANIZER" for obj in agent_features)
         is_reflective_present = any(obj.get("type") == "REFLECTION" for obj in agent_features)
-        is_memory_enable = any(obj.get('type') == 'MEMORY' for obj in agent_features)
+        is_memory_enable = any(obj.get('type') == 'SHORT_TERM_MEMORY' for obj in agent_features)
 
         print("[DEBUG] Creating Strands tools...")
         config_tools = create_strands_tools(tools, user_id)
@@ -865,6 +865,7 @@ async def generate_rag_response_strands_streaming_v2(
             conversation_manager=SlidingWindowConversationManager(window_size=40),
             agent_id=request.session_id,
             state=AgentState({"session_id": request.session_id}),
+            callback_handler = None
         )
 
         print("[DEBUG] Agent created")
