@@ -668,7 +668,7 @@ async def generate_rag_response_strands_streaming_v2(
     try:
         if not isinstance(request.session_id, str):
             print("[ERROR] Invalid session ID format")
-            yield "data:Invalid session ID format. It should be a UUID or timestamp in string format.\n\n"
+            yield "Invalid session ID format. It should be a UUID or timestamp in string format."
             return
 
         print("[DEBUG] Fetching agent data...")
@@ -877,7 +877,7 @@ async def generate_rag_response_strands_streaming_v2(
         async for event in agent.stream_async(formatted_message, callbacks=[ChainStreamHandler(g)]):
             # Check for content in the RunResponse object
             if "data" in event and event["data"]:  # This will never be true
-                yield f"data:{event['data']}"
+                yield f"{event['data']}"
                 await asyncio.sleep(0)
             # Store the final response text for reflection/humanization
             if "result" in event and event["result"]:  # This will never be true either
@@ -885,14 +885,14 @@ async def generate_rag_response_strands_streaming_v2(
 
 
         if is_reflective_present:
-            yield "data:##Reflecting on response for depth and clarity..."
+            yield "##Reflecting on response for depth and clarity..."
             
             print(f'Before reflection: {response_text[:100]}...')
             reflection_prompt = f"Reflect on your response, and provide a more in depth, focused, and verbose response. RETURN ONLY THE NEW TEXT, NO CONFIRMATION TEXT LIKE SURE THING FOR THIS REPROMPT:\n {response_text}"
             
             async for event in agent.stream_async(reflection_prompt, callbacks=[ChainStreamHandler(g)]):
                 if "data" in event and event["data"]:  # This will never be true
-                    yield f"data:{event['data']}"
+                    yield f"{event['data']}"
                     await asyncio.sleep(0)
                 if "result" in event and event["result"]:  # This will never be true either
                     response_text = event["result"].message.get("content", "")[0].get("text", "")
@@ -901,7 +901,7 @@ async def generate_rag_response_strands_streaming_v2(
 
         # Handle humanization if enabled
         if is_humanizer_present:
-            yield "data:##Converting to human-like response..."
+            yield "##Converting to human-like response..."
             
             print(f'Before humanizing: {response_text[:100]}...')
             humanized_response = ""
@@ -909,7 +909,7 @@ async def generate_rag_response_strands_streaming_v2(
             
             async for event in agent.stream_async(humanize_prompt, callbacks=[ChainStreamHandler(g)]):
                 if "data" in event and event["data"]:  # This will never be true
-                    yield f"data:{event['data']}"
+                    yield f"{event['data']}"
                     await asyncio.sleep(0)
                 if "result" in event and event["result"]:  # This will never be true either
                     humanized_response = event["result"].message.get("content", "")[0].get("text", "")
@@ -998,7 +998,7 @@ async def generate_rag_response_strands_streaming(
         print(request)
         response_text = await generate_rag_response_strands(request,db,response_id, g)
         for i in response_text:
-            yield f"data:{i}"
+            yield f"{i}"
             asyncio.sleep(0)
     except Exception as e:
         print(f"[ERROR] ERROR WHILE STREAMING : {e}")
