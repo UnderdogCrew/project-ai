@@ -124,7 +124,7 @@ def get_recent_chat_history_helper(user_id: str, skip: int = 0, limit: int = 10,
     if agent_id is None:
         match_query = {"user_id": user_id}
     else:
-        match_query = {"user_id": user_id, "agent_id": agent_id}
+        match_query = {"user_id": user_id, "bot_id": agent_id}
 
     pipeline = [
         {"$match": match_query},
