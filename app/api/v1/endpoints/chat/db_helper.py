@@ -52,6 +52,13 @@ def fetch_ai_requests_data(query):
     return document
 
 
+def fetch_ai_requests_data_by_user_id(query):
+    client = MongoClient(settings.MONGODB_CLUSTER_URL)
+    db = client[settings.MONGODB_DB_NAME]
+    document = db[settings.MONGODB_COLLECTION_AGENT_CHAT].find(query)
+    return document
+
+
 def fetch_manage_data(search_query, skip, limit):
     client = MongoClient(settings.MONGODB_CLUSTER_URL)
     db = client[settings.MONGODB_DB_NAME]

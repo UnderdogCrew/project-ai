@@ -8,7 +8,7 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 import os
 
 from datetime import datetime
-from app.api.v1.endpoints.chat.db_helper import (get_agent_data as fetch_ai_agent_data, fetch_ai_requests_data, get_environment_data)
+from app.api.v1.endpoints.chat.db_helper import (get_agent_data as fetch_ai_agent_data, fetch_ai_requests_data, get_environment_data, fetch_ai_requests_data_by_user_id)
 
 from bson import ObjectId
 import requests
@@ -508,7 +508,7 @@ async def generate_rag_response_strands(
             print("[DEBUG] Loading memory for agent...")
             try:
                 memory_query = {"session_id": request.session_id}
-                memory_details = fetch_ai_requests_data(query=memory_query)
+                memory_details = fetch_ai_requests_data_by_user_id(query=memory_query)
                 print(f"[DEBUG] memory_details: {memory_details}")
                 for memory in memory_details:
                     initial_messages.extend([
@@ -845,7 +845,7 @@ async def generate_rag_response_strands_streaming_v2(
             print("[DEBUG] Loading memory for agent...")
             try:
                 memory_query = {"session_id": request.session_id}
-                memory_details = fetch_ai_requests_data(query=memory_query)
+                memory_details = fetch_ai_requests_data_by_user_id(query=memory_query)
                 print(f"[DEBUG] memory_details: {memory_details}")
                 for memory in memory_details:
                     initial_messages.extend([
