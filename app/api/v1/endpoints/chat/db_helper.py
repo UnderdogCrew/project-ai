@@ -136,14 +136,14 @@ def get_recent_chat_history_helper(user_id: str, skip: int = 0, limit: int = 10,
                     "$first": {
                         "$cond": [
                             {"$ne": ["$response", None]},
-                            "$response",
+                            "$message",
                             "$message"
                         ]
                     }
                 },
                 "last_message_date": {"$first": "$created_at"},
                 "message_count": {"$sum": 1},
-                "agent_id": {"$first": "$agent_id"}
+                "bot_id": {"$first": "$bot_id"}
             }
         },
         {"$sort": {"last_message_date": -1}},
@@ -161,7 +161,7 @@ def get_recent_chat_history_helper(user_id: str, skip: int = 0, limit: int = 10,
                             },
                             "last_message_date": 1,
                             "message_count": 1,
-                            "agent_id": 1
+                            "bot_id": 1
                         }
                     }
                 ]
