@@ -98,16 +98,31 @@ async def get_chat_history(
 
 @router.get("/recent-history")
 async def get_recent_chat_history(
-    device_id: str,
     agent_id: str = None,
     skip: int = 0,
     limit: int = 10,
+    user_data: GuestTokenResp = Depends(decode_jwt_token),
+    db: AsyncIOMotorClient = Depends(get_database),
 ):
     """
     Fetch recent chat sessions with their first messages as chat names.
     """
+    email_id = user_data['email']
+    email_query = {
+        "email": email_id
+    }
+    used_credit = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_USER].find_one(email_query)
+
+    if used_credit is None:
+        return JSONResponse(
+            status_code=400,
+            content={"message": "User not found", "status": "error"}
+        )
+
+    user_id = str(used_credit['_id'])
+
     try:
-        response = get_user_recent_session_by_user_email(device_id=device_id, skip=skip, limit=limit, agent_id=agent_id)
+        response = get_user_recent_session_by_user_email(user_id=user_id, skip=skip, limit=limit, agent_id=agent_id)
         return response
     except Exception as e:
         raise HTTPException(

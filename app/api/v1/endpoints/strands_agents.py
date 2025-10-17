@@ -12,7 +12,7 @@ from app.api.v1.endpoints.chat.generate_response_strands import generate_rag_res
 from fastapi.responses import StreamingResponse
 from bson import ObjectId
 from app.core.auth_middlerware import decode_jwt_token, GuestTokenResp
-
+from app.api.v1.endpoints.chat.agent_chat import fetch_ai_agent_data
 sync_db = MongoClient(settings.MONGODB_CLUSTER_URL)  # or your MongoDB URI
 # sync_db = client[settings.MONGODB_DB_NAME]
 
@@ -30,9 +30,35 @@ async def generate_data_strands(
         user_data: GuestTokenResp = Depends(decode_jwt_token)
     ):
     print("Api called for generate the response")
-    user_id = user_data['email'] if user_data else None
     print("Request data saved in database")
     response_id = str(ObjectId())
+
+    # Fetch agent data using the agent ID from the request
+    gpt_data = fetch_ai_agent_data(agent_id=body.agent_id)
+
+    email_id = gpt_data['user_id']
+    email_query = {
+        "email": email_id
+    }
+    used_credit = await db[settings.MONGODB_DB_NAME][settings.MONGODB_COLLECTION_USER].find_one(email_query)
+
+    if used_credit is None:
+        return JSONResponse(
+            status_code=400,
+            content={"message": "User not found", "status": "error"}
+        )
+
+    remaining_credit = 0
+    if used_credit is not None:
+        remaining_credit = round(used_credit['credit'], 2)
+
+    if remaining_credit <= 0:
+        return JSONResponse(
+            status_code=400,
+            content={"message": "Insufficient credit", "status": "error"}
+        )
+    
+    user_id = str(used_credit['_id'])
 
     stream = body.stream
     if stream:
